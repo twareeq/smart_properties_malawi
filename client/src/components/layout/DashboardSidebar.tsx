@@ -1,0 +1,80 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useAuthStore } from '@/store/authStore';
+import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import {
+  LayoutDashboard, Heart, Calendar, FileText, Receipt, Bell, MessageSquare, Settings, LogOut, ChevronRight
+} from 'lucide-react';
+
+const tenantLinks = [
+  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { href: '/dashboard/bookings', label: 'My Bookings', icon: Calendar },
+  { href: '/dashboard/favorites', label: 'Favorites', icon: Heart },
+  { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
+  { href: '/dashboard/receipts', label: 'Receipts', icon: Receipt },
+  { href: '/dashboard/messages', label: 'Messages', icon: MessageSquare },
+  { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
+  { href: '/dashboard/profile', label: 'Profile & Settings', icon: Settings },
+];
+
+export default function DashboardSidebar() {
+  const pathname = usePathname();
+  const { logout, user } = useAuthStore();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('rems_token');
+      localStorage.removeItem('rems_user');
+    }
+    router.push('/');
+  };
+
+  return (
+    <aside className="w-64 flex-shrink-0 bg-white border-r min-h-screen flex flex-col">
+      <div className="p-6 border-b">
+        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-lg mb-2">
+          {user?.email?.[0]?.toUpperCase() || 'T'}
+        </div>
+        <p className="font-semibold text-gray-800 truncate">{user?.email}</p>
+        <span className="text-xs text-gray-400 capitalize">{user?.role?.toLowerCase()}</span>
+      </div>
+
+      <nav className="flex-1 p-4 space-y-1">
+        {tenantLinks.map(({ href, label, icon: Icon }) => {
+          const active = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group',
+                active
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
+            >
+              <Icon className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1">{label}</span>
+              {active && <ChevronRight className="w-4 h-4" />}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="p-4 border-t">
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out
+        </button>
+      </div>
+    </aside>
+  );
+}

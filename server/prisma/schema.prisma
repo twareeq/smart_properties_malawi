@@ -1,0 +1,315 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                    String         @id @default(uuid())
+  email                 String         @unique
+  passwordHash          String?
+  role                  Role           @default(TENANT)
+  isVerified            Boolean        @default(false)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  bookings              Booking[]
+  conversationsAsAdmin  Conversation[] @relation("ConversationsAsAdmin")
+  conversationsAsTenant Conversation[] @relation("ConversationsAsTenant")
+  favorites             Favorite[]
+  sentMessages          Message[]      @relation("SentMessages")
+  notifications         Notification[]
+  payments              Payment[]
+  profile               Profile?
+  properties            Property[]
+  propertyViews         PropertyView[]
+  reviews               Review[]
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  firstName String
+  lastName  String
+  phone     String?
+  bio       String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Property {
+  id            String          @id @default(uuid())
+  ownerId       String
+  title         String
+  description   String
+  pricePerNight Decimal
+  status        PropertyStatus  @default(AVAILABLE)
+  type          PropertyType
+  address       String
+  city          String
+  region        String
+  country       String          @default("Malawi")
+  zipCode       String?
+  latitude      Float?
+  longitude     Float?
+  bedrooms      Int
+  bathrooms     Int
+  isFurnished   Boolean         @default(false)
+  hasWiFi       Boolean         @default(false)
+  hasParking    Boolean         @default(false)
+  hasPool       Boolean         @default(false)
+  hasGarden     Boolean         @default(false)
+  hasSecurity   Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  bookings      Booking[]
+  conversations Conversation[]
+  favorites     Favorite[]
+  owner         User            @relation(fields: [ownerId], references: [id])
+  images        PropertyImage[]
+  views         PropertyView[]
+  reviews       Review[]
+}
+
+model PropertyImage {
+  id           String   @id @default(uuid())
+  propertyId   String
+  publicId     String   // Cloudinary public ID
+  secureUrl    String   // Direct URL to the image on Cloudinary
+  thumbnailUrl String?  // Optional transformed URLs
+  mediumUrl    String?
+  originalUrl  String?
+  format       String?  // e.g., 'jpg', 'webp'
+  width        Int?
+  height       Int?
+  bytes        Int?
+  resourceType String   @default("image") // 'image', 'video', etc
+  altText      String?
+  sortOrder    Int      @default(0)
+  isPrimary    Boolean  @default(false)
+  uploadedBy   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  property     Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model Booking {
+  id             String                @id @default(uuid())
+  tenantId       String
+  propertyId     String
+  checkIn        DateTime
+  checkOut       DateTime?
+  nights         Int                   @default(1)
+  isFlexibleStay Boolean               @default(false)
+  totalCost      Decimal
+  status         BookingStatus         @default(PENDING)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  property       Property              @relation(fields: [propertyId], references: [id])
+  tenant         User                  @relation(fields: [tenantId], references: [id])
+  modifications  BookingModification[]
+  payments       Payment[]
+  refundRequest  RefundRequest?
+}
+
+model BookingModification {
+  id          String    @id @default(uuid())
+  bookingId   String
+  newCheckIn  DateTime?
+  newCheckOut DateTime?
+  reason      String?
+  status      String    @default("PENDING")
+  createdAt   DateTime  @default(now())
+  booking     Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model RefundRequest {
+  id        String       @id @default(uuid())
+  bookingId String       @unique
+  amount    Decimal
+  reason    String
+  status    RefundStatus @default(PENDING)
+  notes     String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  booking   Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  tenantId  String
+  bookingId String
+  amount    Decimal
+  currency  String        @default("MWK")
+  reference String        @unique
+  status    PaymentStatus @default(PENDING)
+  provider  String        @default("PayChangu")
+  paidAt    DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  invoice   Invoice?
+  booking   Booking       @relation(fields: [bookingId], references: [id])
+  tenant    User          @relation(fields: [tenantId], references: [id])
+  receipt   Receipt?
+}
+
+model Invoice {
+  id          String   @id @default(uuid())
+  paymentId   String   @unique
+  number      String   @unique
+  amount      Decimal
+  currency    String   @default("MWK")
+  fileUrl     String?
+  generatedAt DateTime @default(now())
+  payment     Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+}
+
+model Receipt {
+  id          String   @id @default(uuid())
+  paymentId   String   @unique
+  number      String   @unique
+  amount      Decimal
+  currency    String   @default("MWK")
+  fileUrl     String?
+  generatedAt DateTime @default(now())
+  payment     Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id          String   @id @default(uuid())
+  tenantId    String
+  propertyId  String
+  rating      Int
+  cleanliness Int      @default(5)
+  comfort     Int      @default(5)
+  location    Int      @default(5)
+  value       Int      @default(5)
+  comment     String?
+  createdAt   DateTime @default(now())
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenant      User     @relation(fields: [tenantId], references: [id])
+}
+
+model Favorite {
+  id         String   @id @default(uuid())
+  tenantId   String
+  propertyId String
+  createdAt  DateTime @default(now())
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenant     User     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, propertyId])
+}
+
+model Conversation {
+  id         String    @id @default(uuid())
+  propertyId String
+  tenantId   String
+  adminId    String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  admin      User      @relation("ConversationsAsAdmin", fields: [adminId], references: [id])
+  property   Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenant     User      @relation("ConversationsAsTenant", fields: [tenantId], references: [id])
+  messages   Message[]
+}
+
+model Message {
+  id             String        @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String
+  status         MessageStatus @default(SENT)
+  createdAt      DateTime      @default(now())
+  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User          @relation("SentMessages", fields: [senderId], references: [id])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PropertyView {
+  id         String   @id @default(uuid())
+  propertyId String
+  userId     String?
+  createdAt  DateTime @default(now())
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id])
+}
+
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  GUEST
+  TENANT
+  ADMIN
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  MAINTENANCE
+  RENTED
+  HIDDEN
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  VILLA
+  COMMERCIAL
+  LAND
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  REFUNDED
+}
+
+enum RefundStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  BOOKING_CREATED
+  BOOKING_CONFIRMED
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  REFUND_STATUS
+  NEW_MESSAGE
+  SYSTEM
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
