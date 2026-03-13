@@ -1,14 +1,38 @@
 'use client';
 
+import { useState } from 'react';
 import { useReceipts } from '@/hooks/useBookings';
+import { paymentService } from '@/lib/services/payment.service';
+import { useToast } from '@/components/providers/ToastProvider';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Receipt as ReceiptIcon, Download, CheckCircle } from 'lucide-react';
+import { Receipt as ReceiptIcon, Download, CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ReceiptsPage() {
   const { data: receipts, isLoading } = useReceipts();
+  const { addToast } = useToast();
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownload = async (id: string, number: string) => {
+    try {
+      setDownloadingId(id);
+      const response = await paymentService.downloadReceipt(id);
+      const blob = new Blob([response.data], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `receipt-${number}.html`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+    } catch (error) {
+      addToast('Failed to download receipt', 'error');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   if (isLoading) return (
     <div className="space-y-6">
@@ -43,8 +67,8 @@ export default function ReceiptsPage() {
                 </div>
                 <div className="flex items-center gap-4">
                   <p className="font-bold text-green-600">MWK {Number(receipt.amount).toLocaleString()}</p>
-                  <Button variant="outline" size="sm" className="flex items-center gap-1">
-                    <Download className="w-4 h-4" /> Download
+                  <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={() => handleDownload(receipt.id, receipt.number)} disabled={downloadingId === receipt.id}>
+                    {downloadingId === receipt.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Download
                   </Button>
                 </div>
               </CardContent>

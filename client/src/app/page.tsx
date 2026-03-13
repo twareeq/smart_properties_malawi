@@ -197,7 +197,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── WHY REMS ──────────────────────────────────────────── */}
+      {/* ─── WHY SMART PROPERTIES MALAWI ──────────────────────────────────────────── */}
       <section className="py-20 px-4">
         <div className="container mx-auto">
           <div className="text-center mb-12">

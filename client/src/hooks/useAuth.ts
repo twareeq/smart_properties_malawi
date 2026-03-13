@@ -15,8 +15,8 @@ export function useLogin() {
       const { user, token } = response.data.data;
       setAuth(user, token);
       if (typeof window !== 'undefined') {
-        localStorage.setItem('rems_token', token);
-        localStorage.setItem('rems_user', JSON.stringify(user));
+        localStorage.setItem('spm_token', token);
+        localStorage.setItem('spm_user', JSON.stringify(user));
       }
       if (user.role === 'ADMIN') {
         router.push('/admin');
@@ -37,8 +37,8 @@ export function useRegister() {
       const { user, token } = response.data.data;
       setAuth(user, token);
       if (typeof window !== 'undefined') {
-        localStorage.setItem('rems_token', token);
-        localStorage.setItem('rems_user', JSON.stringify(user));
+        localStorage.setItem('spm_token', token);
+        localStorage.setItem('spm_user', JSON.stringify(user));
       }
       router.push('/dashboard');
     },

@@ -15,8 +15,8 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("rems_token");
-      const storedUser = localStorage.getItem("rems_user");
+      const token = localStorage.getItem("spm_token");
+      const storedUser = localStorage.getItem("spm_user");
       if (!token || !storedUser) {
         router.push("/login");
         return;

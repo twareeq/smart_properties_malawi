@@ -1,14 +1,38 @@
 'use client';
 
+import { useState } from 'react';
 import { useInvoices } from '@/hooks/useBookings';
+import { paymentService } from '@/lib/services/payment.service';
+import { useToast } from '@/components/providers/ToastProvider';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { FileText, Download } from 'lucide-react';
+import { FileText, Download, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function InvoicesPage() {
   const { data: invoices, isLoading } = useInvoices();
+  const { addToast } = useToast();
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownload = async (id: string, number: string) => {
+    try {
+      setDownloadingId(id);
+      const response = await paymentService.downloadInvoice(id);
+      const blob = new Blob([response.data], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `invoice-${number}.html`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+    } catch (error) {
+      addToast('Failed to download invoice', 'error');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   if (isLoading) return (
     <div className="space-y-6">
@@ -43,8 +67,8 @@ export default function InvoicesPage() {
                 </div>
                 <div className="flex items-center gap-4">
                   <p className="font-bold text-gray-900">MWK {Number(invoice.amount).toLocaleString()}</p>
-                  <Button variant="outline" size="sm" className="flex items-center gap-1">
-                    <Download className="w-4 h-4" /> Download
+                  <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={() => handleDownload(invoice.id, invoice.number)} disabled={downloadingId === invoice.id}>
+                    {downloadingId === invoice.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Download
                   </Button>
                 </div>
               </CardContent>

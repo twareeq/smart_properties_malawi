@@ -1,14 +1,15 @@
 'use client';
 
-import { useMyBookings } from '@/hooks/useBookings';
-import { useInitiatePayment } from '@/hooks/useBookings';
+import { useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useMyBookings, useInitiatePayment, useVerifyPayment } from '@/hooks/useBookings';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/providers/ToastProvider';
 import Link from 'next/link';
-import { Calendar, MapPin, CreditCard, Home } from 'lucide-react';
+import { Calendar, MapPin, CreditCard, Home, Loader2 } from 'lucide-react';
 
 const statusVariant: Record<string, 'success' | 'warning' | 'secondary' | 'destructive'> = {
   CONFIRMED: 'success',
@@ -18,27 +19,53 @@ const statusVariant: Record<string, 'success' | 'warning' | 'secondary' | 'destr
 };
 
 export default function BookingsPage() {
-  const { data: bookings, isLoading } = useMyBookings();
-  const { mutateAsync: initiatePayment, isPending } = useInitiatePayment();
+  const { data: bookings, isLoading, refetch } = useMyBookings();
+  const { mutateAsync: initiatePayment, isPending: isInitiating } = useInitiatePayment();
+  const { mutateAsync: verifyPayment, isPending: isVerifying } = useVerifyPayment();
   const { addToast } = useToast();
+  
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    const payment = searchParams.get('payment');
+    const tx_ref = searchParams.get('tx_ref');
+    
+    if (payment === 'verify' && tx_ref) {
+      verifyPayment(tx_ref).then(() => {
+        addToast('Payment verified successfully!', 'success');
+        refetch();
+        router.replace('/dashboard/bookings');
+      }).catch((err) => {
+        addToast(err?.response?.data?.message || 'Payment verification failed.', 'error');
+        router.replace('/dashboard/bookings');
+      });
+    }
+  }, [searchParams, verifyPayment, addToast, router, refetch]);
 
   const handlePay = async (bookingId: string) => {
     try {
       const result = await initiatePayment(bookingId);
       const checkoutUrl = result?.data?.data?.checkoutUrl;
       if (checkoutUrl) {
-        window.open(checkoutUrl, '_blank');
+        window.location.href = checkoutUrl;
+      } else {
+        addToast('No checkout URL returned.', 'error');
       }
-      addToast('Payment initiated! Complete payment in the new tab.', 'info');
     } catch (err: any) {
       addToast(err?.response?.data?.message || 'Payment failed to initiate.', 'error');
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isVerifying) {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">My Bookings</h1>
+        {isVerifying ? (
+           <div className="flex items-center gap-2 text-primary p-4 bg-primary/10 rounded-xl">
+             <Loader2 className="w-5 h-5 animate-spin"/> Verifying payment...
+           </div>
+        ) : null}
         {[1, 2, 3].map((i) => <Skeleton key={i} className="h-36 w-full rounded-xl" />)}
       </div>
     );
@@ -83,8 +110,8 @@ export default function BookingsPage() {
                     <Badge variant={statusVariant[booking.status] || 'secondary'}>{booking.status}</Badge>
                     <p className="font-bold text-gray-900">MWK {Number(booking.totalCost).toLocaleString()}</p>
                     {booking.status === 'PENDING' && (
-                      <Button size="sm" className="flex items-center gap-1" onClick={() => handlePay(booking.id)} disabled={isPending}>
-                        <CreditCard className="w-4 h-4" /> Pay Now
+                      <Button size="sm" className="flex items-center gap-1" onClick={() => handlePay(booking.id)} disabled={isInitiating}>
+                        {isInitiating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CreditCard className="w-4 h-4" />} Pay Now
                       </Button>
                     )}
                   </div>

@@ -28,8 +28,8 @@ export default function DashboardSidebar() {
   const handleLogout = () => {
     logout();
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('rems_token');
-      localStorage.removeItem('rems_user');
+      localStorage.removeItem('spm_token');
+      localStorage.removeItem('spm_user');
     }
     router.push('/');
   };

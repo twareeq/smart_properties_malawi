@@ -24,6 +24,12 @@ export function useInitiatePayment() {
   });
 }
 
+export function useVerifyPayment() {
+  return useMutation({
+    mutationFn: (tx_ref: string) => paymentService.verifyPayment(tx_ref),
+  });
+}
+
 export function useInvoices() {
   return useQuery({
     queryKey: ['invoices'],

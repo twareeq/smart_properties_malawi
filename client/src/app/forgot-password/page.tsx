@@ -17,7 +17,7 @@ export default function ForgotPasswordPage() {
       >
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 text-primary font-bold text-2xl mb-2">
-            <Home className="w-7 h-7" /> REMS
+            <Home className="w-7 h-7" /> Smart Properties Malawi
           </Link>
           <h1 className="text-2xl font-bold text-gray-900 mt-2">Reset your password</h1>
           <p className="text-gray-500 text-sm mt-1">Enter your email and we&apos;ll send you a reset link</p>

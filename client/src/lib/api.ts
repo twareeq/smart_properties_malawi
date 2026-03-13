@@ -10,7 +10,7 @@ const api = axios.create({
 // Request interceptor — inject auth token
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('rems_token');
+    const token = localStorage.getItem('spm_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -23,8 +23,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('rems_token');
-      localStorage.removeItem('rems_user');
+      localStorage.removeItem('spm_token');
+      localStorage.removeItem('spm_user');
       window.location.href = '/login';
     }
     return Promise.reject(error);

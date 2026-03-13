@@ -12,8 +12,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     // Check localStorage for token on mount
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('rems_token');
-      const storedUser = localStorage.getItem('rems_user');
+      const token = localStorage.getItem('spm_token');
+      const storedUser = localStorage.getItem('spm_user');
       if (!token || !storedUser) {
         router.push('/login');
       }

@@ -20,7 +20,7 @@ export default function Footer() {
             <div className="flex flex-col gap-2 text-sm">
               <span className="flex items-center gap-2"><MapPin className="w-4 h-4 text-primary/70" /> Area 6, Lilongwe, Malawi</span>
               <span className="flex items-center gap-2"><Phone className="w-4 h-4 text-primary/70" /> +265 999 000 000</span>
-              <span className="flex items-center gap-2"><Mail className="w-4 h-4 text-primary/70" /> info@rems.mw</span>
+              <span className="flex items-center gap-2"><Mail className="w-4 h-4 text-primary/70" /> info@smartproperties.mw</span>
             </div>
             <div className="flex gap-3 mt-6">
               {[Facebook, Twitter, Instagram].map((Icon, i) => (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -24,18 +24,35 @@ const profileSchema = z.object({
 type ProfileForm = z.infer<typeof profileSchema>;
 
 export default function ProfilePage() {
-  const { user } = useAuthStore();
+  const { user, fetchUser } = useAuthStore();
   const { mutateAsync, isPending } = useUpdateProfile();
   const { addToast } = useToast();
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ProfileForm>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
   });
+
+  useEffect(() => {
+    // Ensure we fetch latest user profile to remove placeholder data
+    fetchUser();
+  }, [fetchUser]);
+
+  useEffect(() => {
+    if (user?.profile) {
+      reset({
+        firstName: user.profile.firstName || '',
+        lastName: user.profile.lastName || '',
+        phone: user.profile.phone || '',
+        bio: user.profile.bio || '',
+      });
+    }
+  }, [user, reset]);
 
   const onSubmit = async (data: ProfileForm) => {
     try {
       await mutateAsync(data);
       addToast('Profile updated successfully!', 'success');
+      fetchUser(); // Refresh user profile in store
     } catch (err: any) {
       addToast(err?.response?.data?.message || 'Failed to update profile.', 'error');
     }
@@ -49,10 +66,15 @@ export default function ProfilePage() {
         <CardHeader>
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary text-2xl font-bold">
-              {user?.email?.[0]?.toUpperCase() || <User className="w-8 h-8" />}
+              {user?.profile?.avatarUrl ? (
+                <img src={user.profile.avatarUrl} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+              ) : (
+                user?.email?.[0]?.toUpperCase() || <User className="w-8 h-8" />
+              )}
             </div>
             <div>
-              <CardTitle>{user?.email}</CardTitle>
+              <CardTitle>{user?.profile?.firstName} {user?.profile?.lastName}</CardTitle>
+              <p className="text-gray-400 text-sm">{user?.email}</p>
               <p className="text-gray-400 text-sm capitalize">{user?.role?.toLowerCase()} account</p>
             </div>
           </div>
