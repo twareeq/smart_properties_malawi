@@ -12,7 +12,7 @@ export { cloudinary };
 /**
  * Generates an authentication signature for frontend direct uploads
  */
-export const generateCloudinarySignature = (folder: string = 'rems/properties') => {
+export const generateCloudinarySignature = (folder: string = 'smart_properties_malawi/properties') => {
   const timestamp = Math.round(new Date().getTime() / 1000);
   
   const signature = cloudinary.utils.api_sign_request(

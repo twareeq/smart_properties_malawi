@@ -1,7 +1,7 @@
 {
-  "name": "rems-server",
+  "name": "smart-properties-malawi-server",
   "version": "1.0.0",
-  "description": "Backend for Smart Real Estate Management System (REMS)",
+  "description": "Backend for Smart Properties Malawi",
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",

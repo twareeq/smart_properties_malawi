@@ -20,7 +20,7 @@ router.use('/analytics', analyticsRoutes);
 router.use('/uploads', uploadRoutes);
 
 router.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'ok', message: 'REMS API is running' });
+  res.status(200).json({ status: 'ok', message: 'Smart Properties Malawi API is running' });
 });
 
 export default router;

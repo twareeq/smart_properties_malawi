@@ -1,4 +1,4 @@
-# 🏠 REMS — Smart Real Estate Management System for Malawi
+# 🏠 Smart Properties Malawi
 
 A modern, full-stack real estate platform designed for Malawi that connects property owners with tenants. Built with Next.js, Express.js, Prisma, PostgreSQL, Supabase, and PayChangu.
 
@@ -18,7 +18,7 @@ A modern, full-stack real estate platform designed for Malawi that connects prop
 ## 📁 Project Structure
 
 ```
-rems/
+smart-properties-malawi/
 ├── client/          # Next.js 14 frontend (App Router)
 └── server/          # Express.js + Prisma backend API
 ```
@@ -75,9 +75,9 @@ This creates:
 **Demo credentials:**
 | Role | Email | Password |
 |---|---|---|
-| Admin | admin@rems.mw | Password123! |
-| Tenant | tenant@rems.mw | Password123! |
-| Tenant | john@rems.mw | Password123! |
+| Admin | admin@smartproperties.mw | Password123! |
+| Tenant | tenant@smartproperties.mw | Password123! |
+| Tenant | john@smartproperties.mw | Password123! |
 
 ### 5. Start the development server
 
@@ -224,4 +224,4 @@ Frontend starts at: `http://localhost:3000`
 
 ## 📄 License
 
-MIT — Built for the REMS Malawi project.
+MIT — Built for the Smart Properties Malawi project.

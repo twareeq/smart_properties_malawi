@@ -7,7 +7,7 @@ dotenv.config();
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting REMS seed...');
+  console.log('🌱 Starting Smart Properties Malawi seed...');
 
   // ─── Clear existing data ────────────────────────────────────────────────────
   await prisma.receipt.deleteMany();
@@ -30,7 +30,7 @@ async function main() {
   // ─── Create Users ────────────────────────────────────────────────────────────
   const adminUser = await prisma.user.create({
     data: {
-      email: 'admin@rems.mw',
+      email: 'admin@smartproperties.mw',
       passwordHash,
       role: Role.ADMIN,
       isVerified: true,
@@ -39,7 +39,7 @@ async function main() {
           firstName: 'Kondwani',
           lastName: 'Mwale',
           phone: '+265991234001',
-          bio: 'Property manager at REMS Malawi',
+          bio: 'Property manager at Smart Properties Malawi',
         },
       },
     },
@@ -47,7 +47,7 @@ async function main() {
 
   const tenant1 = await prisma.user.create({
     data: {
-      email: 'tenant@rems.mw',
+      email: 'tenant@smartproperties.mw',
       passwordHash,
       role: Role.TENANT,
       isVerified: true,
@@ -64,7 +64,7 @@ async function main() {
 
   const tenant2 = await prisma.user.create({
     data: {
-      email: 'john@rems.mw',
+      email: 'john@smartproperties.mw',
       passwordHash,
       role: Role.TENANT,
       isVerified: true,
@@ -226,7 +226,7 @@ async function main() {
         ...propData,
         ownerId: adminUser.id,
         images: {
-          create: images.map((url) => ({ url })),
+          create: images.map((url, i) => ({ url, publicId: `seed-image-${i}`, secureUrl: url })),
         },
       },
     });
@@ -261,7 +261,7 @@ async function main() {
       amount: totalCost,
       currency: 'MWK',
       status: PaymentStatus.SUCCESSFUL,
-      reference: `REMS-DEMO-${Date.now()}`,
+      reference: `SPM-DEMO-${Date.now()}`,
       provider: 'PAYCHANGU',
       paidAt: new Date(),
     },
@@ -322,9 +322,9 @@ async function main() {
   console.log('\n✅ Seed complete!');
   console.log('─────────────────────────────────────────────');
   console.log('Demo Accounts:');
-  console.log('  Admin:  admin@rems.mw   / Password123!');
-  console.log('  Tenant: tenant@rems.mw  / Password123!');
-  console.log('  Tenant: john@rems.mw    / Password123!');
+  console.log('  Admin:  admin@smartproperties.mw   / Password123!');
+  console.log('  Tenant: tenant@smartproperties.mw  / Password123!');
+  console.log('  Tenant: john@smartproperties.mw    / Password123!');
   console.log('─────────────────────────────────────────────');
 }
 

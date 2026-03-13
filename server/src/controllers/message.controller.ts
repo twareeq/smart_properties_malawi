@@ -7,7 +7,9 @@ export const getConversations = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
     const role = (req as any).user.role;
 
-    const where = role === 'ADMIN' ? { adminId: userId } : { tenantId: userId };
+    // Both tenants and admins/owners might have conversations. We just query all their involved conversations.
+    // This allows a property owner with role "TENANT" to see their owner conversations too.
+    const where = role === 'ADMIN' ? { adminId: userId } : { OR: [{ tenantId: userId }, { adminId: userId }] };
 
     const conversations = await prisma.conversation.findMany({
       where,
@@ -67,6 +69,10 @@ export const sendMessage = async (req: Request, res: Response) => {
 
     const property = await prisma.property.findUnique({ where: { id: propertyId } });
     if (!property) return sendError(res, 404, false, 'Property not found');
+
+    if (userId === property.ownerId) {
+      return sendError(res, 400, false, 'You cannot message yourself');
+    }
 
     // Find or create conversation
     let conversation = await prisma.conversation.findFirst({
