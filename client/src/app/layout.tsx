@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
 import { ReactQueryClientProvider } from "@/components/providers/ReactQueryProvider";
@@ -36,6 +37,10 @@ export default function RootLayout({
             </SessionTimeoutProvider>
           </ToastProvider>
         </ReactQueryClientProvider>
+        
+        {/* Chatbot Scripts */}
+        <Script src="https://cdn.botpress.cloud/webchat/v3.6/inject.js" strategy="afterInteractive" />
+        <Script src="https://files.bpcontent.cloud/2026/03/14/09/20260314095535-XI618IE5.js" strategy="lazyOnload" defer />
       </body>
     </html>
   );

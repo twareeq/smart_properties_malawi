@@ -123,22 +123,51 @@ export const createBooking = async (req: Request, res: Response) => {
       totalCost = Number(property.pricePerNight);
     }
 
-    const booking = await prisma.booking.create({
-      data: {
-        tenantId,
-        propertyId,
-        checkIn: new Date(checkIn),
-        checkOut: checkOut ? new Date(checkOut) : null,
-        nights,
-        isFlexibleStay: Boolean(isFlexibleStay),
-        totalCost,
-        status: 'PENDING'
-      }
+    const newBooking = await prisma.$transaction(async (tx) => {
+      const booking = await tx.booking.create({
+        data: {
+          tenantId,
+          propertyId,
+          checkIn: new Date(checkIn),
+          checkOut: checkOut ? new Date(checkOut) : null,
+          nights,
+          isFlexibleStay: Boolean(isFlexibleStay),
+          totalCost,
+          status: 'PENDING'
+        }
+      });
+
+      // Generate strict reference for PayChangu early
+      const { v4: uuidv4 } = require('uuid');
+      const reference = `TX-${uuidv4().substring(0, 8).toUpperCase()}-${Date.now()}`;
+
+      // Create pending payment immediately
+      const payment = await tx.payment.create({
+        data: {
+          tenantId,
+          bookingId: booking.id,
+          amount: booking.totalCost,
+          reference,
+          status: 'PENDING',
+          provider: 'PayChangu',
+        },
+      });
+
+      // Create pre-payment invoice immediately
+      await tx.invoice.create({
+        data: {
+          paymentId: payment.id,
+          number: `INV-${reference}`,
+          amount: payment.amount,
+        },
+      });
+
+      return booking;
     });
 
     // Notify Admin (we'll implement notifications later, placeholder here)
 
-    return sendSuccess(res, 201, true, 'Booking created pending payment', booking);
+    return sendSuccess(res, 201, true, 'Booking created pending payment', newBooking);
   } catch (error: any) {
     return sendError(res, 500, false, 'Failed to create booking', error.message);
   }
@@ -256,6 +285,47 @@ export const requestModification = async (req: Request, res: Response) => {
     return sendSuccess(res, 201, true, 'Modification requested', modification);
   } catch (error: any) {
     return sendError(res, 500, false, 'Failed to request modification', error.message);
+  }
+};
+
+export const cancelBooking = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const tenantId = (req as any).user.id;
+
+    const booking = await prisma.booking.findUnique({
+      where: { id, tenantId },
+      include: { payments: true }
+    });
+
+    if (!booking) return sendError(res, 404, false, 'Booking not found');
+    if (booking.status !== 'PENDING') {
+      return sendError(res, 400, false, `Cannot cancel booking with status ${booking.status}`);
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Mark booking as cancelled
+      await tx.booking.update({
+        where: { id },
+        data: { status: 'CANCELLED' }
+      });
+
+      // 2. Mark associated property back to available (if it was somehow blocked, though normally it's blocked at CONFIRMED. Keeping this explicit for safety)
+      await tx.property.update({
+        where: { id: booking.propertyId },
+        data: { status: 'AVAILABLE' }
+      });
+
+      // 3. Mark pending payments/invoices as failed/aborted
+      await tx.payment.updateMany({
+        where: { bookingId: id, status: 'PENDING' },
+        data: { status: 'FAILED' }
+      });
+    });
+
+    return sendSuccess(res, 200, true, 'Booking cancelled successfully');
+  } catch (error: any) {
+    return sendError(res, 500, false, 'Failed to cancel booking', error.message);
   }
 };
 

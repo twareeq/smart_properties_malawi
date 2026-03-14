@@ -33,29 +33,19 @@ export const initiatePayment = async (
       include: { profile: true },
     });
 
-    // Generate strict reference for PayChangu
-    const reference = `TX-${uuidv4().substring(0, 8).toUpperCase()}-${Date.now()}`;
-
-    // Create pending payment
-    const payment = await prisma.payment.create({
-      data: {
+    // Find the immediately generated pending payment from createBooking
+    const payment = await prisma.payment.findFirst({
+      where: {
         tenantId,
         bookingId,
-        amount: booking.totalCost,
-        reference,
         status: 'PENDING',
-        provider: 'PayChangu',
       },
+      orderBy: { createdAt: 'desc' },
     });
 
-    // Create pre-payment invoice
-    await prisma.invoice.create({
-      data: {
-        paymentId: payment.id,
-        number: `INV-${reference}`,
-        amount: payment.amount,
-      },
-    });
+    if (!payment) {
+      return sendError(res, 404, false, 'Pending payment record not found for this booking');
+    }
 
     try {
       const paychanguKey =
@@ -85,7 +75,7 @@ export const initiatePayment = async (
             last_name: user?.profile?.lastName || 'User',
             returnUrl: `${backendDomain}/payments/webhook/paychangu`,
             callback_url: callbackUrl,
-            tx_ref: reference,
+            tx_ref: payment.reference,
             customization: {
               title: 'Booking Payment',
               description: booking.property.title,

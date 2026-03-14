@@ -7,7 +7,8 @@ import {
   downloadAgreement,
   getAdminBookings,
   getAdminBookingDetail,
-  getTenantBookingDetail
+  getTenantBookingDetail,
+  cancelBooking
 } from '../controllers/booking.controller';
 import { validateRequest } from '../middleware/validateRequest';
 import { createBookingSchema, modifyBookingSchema } from '../validations/booking.schema';
@@ -22,6 +23,7 @@ router.post('/', validateRequest(createBookingSchema), createBooking);
 router.get('/my-bookings', getMyBookings);
 router.get('/:id', getTenantBookingDetail);
 router.post('/:id/modify', validateRequest(modifyBookingSchema), requestModification);
+router.put('/:id/cancel', cancelBooking);
 router.get('/:id/agreement', downloadAgreement);
 
 // Admin Routes

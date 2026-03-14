@@ -26,6 +26,12 @@ export function useCreateBooking() {
   });
 }
 
+export function useCancelBooking() {
+  return useMutation({
+    mutationFn: (id: string) => bookingService.cancelBooking(id),
+  });
+}
+
 export function useInitiatePayment() {
   return useMutation({
     mutationFn: (bookingId: string) => paymentService.initiatePayment(bookingId),

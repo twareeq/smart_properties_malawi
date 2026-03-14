@@ -2,11 +2,13 @@
 
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useBookingDetail } from '@/hooks/useBookings';
+import { useBookingDetail, useCancelBooking } from '@/hooks/useBookings';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/providers/ToastProvider';
 import { 
   Calendar, 
   MapPin, 
@@ -34,7 +36,22 @@ const statusVariant: Record<string, 'success' | 'warning' | 'secondary' | 'destr
 export default function BookingDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { addToast } = useToast();
   const { data: booking, isLoading, error } = useBookingDetail(id as string);
+  const { mutateAsync: cancelBooking, isPending: isCancelling } = useCancelBooking();
+
+  const handleCancelBooking = async () => {
+    if (!confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) return;
+    try {
+      await cancelBooking(id as string);
+      addToast('Booking cancelled successfully', 'success');
+      queryClient.invalidateQueries({ queryKey: ['booking', id] });
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+    } catch (err: any) {
+      addToast(err?.response?.data?.message || 'Failed to cancel booking', 'error');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -211,7 +228,12 @@ export default function BookingDetailPage() {
                   <CreditCard className="w-12 h-12 text-gray-200 mx-auto mb-3" />
                   <p className="text-gray-500">No transactions recorded yet.</p>
                   {booking.status === 'PENDING' && (
-                    <Button className="mt-4" onClick={() => router.push('/dashboard/bookings')}>Proceed to Payment</Button>
+                    <div className="flex gap-2 mt-4">
+                      <Button onClick={() => router.push('/dashboard/bookings')}>Proceed to Payment</Button>
+                      <Button variant="destructive" onClick={handleCancelBooking} disabled={isCancelling}>
+                        {isCancelling ? 'Cancelling...' : 'Cancel Booking'}
+                      </Button>
+                    </div>
                   )}
                 </div>
               )}
