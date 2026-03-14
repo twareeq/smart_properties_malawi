@@ -12,8 +12,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, UploadCloud, X, ImagePlus } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Loader2, UploadCloud, X, ImagePlus, MapPin } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const MapPreview = dynamic(() => import('@/components/MapPreview'), { 
+  ssr: false,
+  loading: () => <div className="h-[300px] bg-gray-100 rounded-lg animate-pulse flex items-center justify-center text-gray-400">Loading map...</div>
+});
 
 const schema = z.object({
   title: z.string().min(5),
@@ -32,6 +38,9 @@ const schema = z.object({
   hasSecurity: z.boolean().default(false),
   hasGarden: z.boolean().default(false),
   status: z.enum(['AVAILABLE', 'MAINTENANCE', 'RENTED', 'HIDDEN']).default('AVAILABLE'),
+  latitude: z.string().optional(),
+  longitude: z.string().optional(),
+  googleMapsUrl: z.string().url("Must be a valid URL").optional().or(z.literal('')),
 });
 
 type CreatePropertyForm = z.infer<typeof schema>;
@@ -59,10 +68,28 @@ export default function CreatePropertyPage() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<CreatePropertyForm>({
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<CreatePropertyForm>({
     resolver: zodResolver(schema),
-    defaultValues: { type: 'APARTMENT', hasWiFi: false, hasPool: false, hasParking: false, isFurnished: false, hasSecurity: false, hasGarden: false },
+    defaultValues: { type: 'APARTMENT', hasWiFi: false, hasPool: false, hasParking: false, isFurnished: false, hasSecurity: false, hasGarden: false, latitude: '', longitude: '', googleMapsUrl: '' },
   });
+
+  const watchLat = watch('latitude');
+  const watchLng = watch('longitude');
+  
+  // Parse Google Maps URL to extract coordinates
+  const handleUrlParse = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    if (!url) return;
+    
+    // Match common Google Maps URL coordinate patterns (@lat,lng or center=lat,lng)
+    const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || url.match(/center=(-?\d+\.\d+),(-?\d+\.\d+)/);
+    
+    if (match && match[1] && match[2]) {
+      setValue('latitude', match[1]);
+      setValue('longitude', match[2]);
+      addToast('Coordinates extracted from URL!', 'success');
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -86,12 +113,18 @@ export default function CreatePropertyPage() {
   const onSubmit = async (data: CreatePropertyForm) => {
     try {
       // 1. Create the property first
-      const res = await createProperty({
+      const payload: any = {
         ...data,
         pricePerNight: parseFloat(data.pricePerNight),
         bedrooms: parseInt(data.bedrooms),
         bathrooms: parseInt(data.bathrooms),
-      });
+      };
+
+      if (data.latitude) payload.latitude = parseFloat(data.latitude);
+      if (data.longitude) payload.longitude = parseFloat(data.longitude);
+      if (data.googleMapsUrl) payload.googleMapsUrl = data.googleMapsUrl;
+
+      const res = await createProperty(payload);
 
       const propertyId = res.data?.data?.id;
 
@@ -198,6 +231,69 @@ export default function CreatePropertyPage() {
                 </label>
               ))}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* ── Map Location ─────────────────────────────────────── */}
+        <Card className="border-0 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-primary" />
+              Map Location
+            </CardTitle>
+            <CardDescription>Enter coordinates directly or paste a Google Maps URL to auto-fill.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <Label>Google Maps URL (Optional)</Label>
+                <Input placeholder="https://www.google.com/maps/..." {...register('googleMapsUrl')} onChange={(e) => {
+                  register('googleMapsUrl').onChange(e);
+                  handleUrlParse(e);
+                }} />
+                {errors.googleMapsUrl && <p className="text-red-500 text-xs">{errors.googleMapsUrl.message}</p>}
+                <p className="text-xs text-gray-500 mt-1">Paste a link to extract coordinates automatically.</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label>Latitude</Label>
+                  <Input placeholder="e.g. -13.962612" {...register('latitude')} />
+                  {errors.latitude && <p className="text-red-500 text-xs">{errors.latitude.message}</p>}
+                </div>
+                <div className="space-y-1">
+                  <Label>Longitude</Label>
+                  <Input placeholder="e.g. 33.774119" {...register('longitude')} />
+                  {errors.longitude && <p className="text-red-500 text-xs">{errors.longitude.message}</p>}
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800 border border-blue-100">
+                <strong>How to find coordinates:</strong>
+                <ol className="list-decimal ml-4 mt-1 space-y-1">
+                  <li>Open Google Maps and find the property.</li>
+                  <li>Right-click the exact location on the map.</li>
+                  <li>Click the coordinates at the top of the menu to copy them.</li>
+                  <li>Paste the first number into Latitude, and the second into Longitude.</li>
+                </ol>
+              </div>
+            </div>
+
+            {/* Map Preview */}
+            {watchLat && watchLng && !isNaN(parseFloat(watchLat)) && !isNaN(parseFloat(watchLng)) ? (
+              <div className="mt-4">
+                <Label className="mb-2 block">Live Map Preview</Label>
+                <MapPreview 
+                  latitude={parseFloat(watchLat)} 
+                  longitude={parseFloat(watchLng)} 
+                  height="300px" 
+                />
+              </div>
+            ) : (
+              <div className="h-[200px] border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-gray-400 mt-4">
+                Enter valid coordinates to see preview
+              </div>
+            )}
           </CardContent>
         </Card>
 

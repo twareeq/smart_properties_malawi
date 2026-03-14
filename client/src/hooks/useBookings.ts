@@ -11,6 +11,14 @@ export function useMyBookings() {
   });
 }
 
+export function useBookingDetail(id: string) {
+  return useQuery({
+    queryKey: ['booking', id],
+    queryFn: () => bookingService.getBookingDetail(id).then((r) => r.data.data),
+    enabled: !!id,
+  });
+}
+
 export function useCreateBooking() {
   return useMutation({
     mutationFn: (data: { propertyId: string; checkIn: string; checkOut?: string; isFlexibleStay?: boolean }) =>

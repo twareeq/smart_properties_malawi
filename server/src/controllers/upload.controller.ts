@@ -107,3 +107,39 @@ export const deleteMedia = async (req: Request, res: Response) => {
     return sendError(res, 500, false, 'Failed to delete image', error.message);
   }
 };
+
+/**
+ * PATCH /api/v1/uploads/property-image/:imageId/primary
+ * Sets a specific image as the primary cover photo for a property
+ */
+export const setPrimaryImage = async (req: Request, res: Response) => {
+  try {
+    const { imageId } = req.params;
+    const userId = (req as any).user.id;
+
+    // 1. Verify existence and ownership
+    const image = await prisma.propertyImage.findUnique({
+      where: { id: imageId },
+      include: { property: { select: { ownerId: true } } },
+    });
+
+    if (!image) return sendError(res, 404, false, 'Image not found');
+    if (image.property.ownerId !== userId) return sendError(res, 403, false, 'Unauthorized to modify this property\'s images');
+
+    // 2. Transaction to set all false, then selected one true
+    await prisma.$transaction([
+      prisma.propertyImage.updateMany({
+        where: { propertyId: image.propertyId },
+        data: { isPrimary: false },
+      }),
+      prisma.propertyImage.update({
+        where: { id: imageId },
+        data: { isPrimary: true },
+      }),
+    ]);
+
+    return sendSuccess(res, 200, true, 'Cover photo updated successfully');
+  } catch (error: any) {
+    return sendError(res, 500, false, 'Failed to set cover photo', error.message);
+  }
+};

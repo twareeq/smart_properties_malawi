@@ -192,6 +192,48 @@ export const getPropertyBookings = async (req: Request, res: Response) => {
   }
 };
 
+// ─── Tenant: Single Booking Detail ───────────────────────────────────────────
+export const getTenantBookingDetail = async (req: Request, res: Response) => {
+  try {
+    const tenantId = (req as any).user.id;
+    const { id } = req.params;
+
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      include: {
+        property: {
+          include: {
+            owner: {
+              select: {
+                id: true,
+                email: true,
+                profile: {
+                  select: { firstName: true, lastName: true, phone: true }
+                }
+              }
+            },
+            images: { where: { isPrimary: true }, take: 1 }
+          }
+        },
+        payments: {
+          orderBy: { createdAt: 'desc' },
+          include: { invoice: true, receipt: true }
+        },
+        modifications: true
+      }
+    });
+
+    if (!booking) return sendError(res, 404, false, 'Booking not found');
+    if (booking.tenantId !== tenantId) {
+      return sendError(res, 403, false, 'Not authorized');
+    }
+
+    return sendSuccess(res, 200, true, 'Booking detail fetched', booking);
+  } catch (error: any) {
+    return sendError(res, 500, false, 'Failed to fetch booking detail', error.message);
+  }
+};
+
 export const requestModification = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

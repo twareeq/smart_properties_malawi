@@ -57,6 +57,7 @@ model Property {
   zipCode       String?
   latitude      Float?
   longitude     Float?
+  googleMapsUrl String?
   bedrooms      Int
   bathrooms     Int
   isFurnished   Boolean         @default(false)

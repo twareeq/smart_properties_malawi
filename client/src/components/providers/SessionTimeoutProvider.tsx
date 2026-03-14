@@ -5,9 +5,13 @@ import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/providers/ToastProvider';
 
-const TIMEOUT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
+const TIMEOUT_DURATION = 5 * 60 * 1000; // 30 minutes in milliseconds
 
-export function SessionTimeoutProvider({ children }: { children: React.ReactNode }) {
+export function SessionTimeoutProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { isAuthenticated, logout } = useAuthStore();
   const router = useRouter();
   const { addToast } = useToast();
@@ -29,8 +33,14 @@ export function SessionTimeoutProvider({ children }: { children: React.ReactNode
   }, [isAuthenticated, handleLogout]);
 
   useEffect(() => {
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    
+    const events = [
+      'mousedown',
+      'mousemove',
+      'keypress',
+      'scroll',
+      'touchstart',
+    ];
+
     const handleEvent = () => {
       resetTimer();
     };

@@ -161,11 +161,23 @@ export const getPropertyById = async (req: Request, res: Response) => {
       return sendError(res, 404, false, 'Property not found');
     }
 
-    // Access control: If property is not PUBLIC/AVAILABLE, only the owner can see the full details.
-    // This prevents one admin from seeing another's hidden/draft listings if they guess the ID.
+    // Access control: If property is not PUBLIC/AVAILABLE, only the owner OR a tenant with a booking can see the full details.
     if (property.status !== 'AVAILABLE') {
       const userId = (req as any).user?.id;
-      if (property.ownerId !== userId) {
+      if (!userId) return sendError(res, 403, false, 'Not authorized to view this property listing');
+      
+      const isOwner = property.ownerId === userId;
+      
+      // Check if this user has any active or past booking for this property
+      const hasBooking = await prisma.booking.findFirst({
+        where: {
+          propertyId: id,
+          tenantId: userId,
+          status: { in: ['CONFIRMED', 'COMPLETED', 'PENDING'] }
+        }
+      });
+
+      if (!isOwner && !hasBooking) {
         return sendError(res, 403, false, 'Not authorized to view this property listing');
       }
     }

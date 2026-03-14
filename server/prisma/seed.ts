@@ -1,4 +1,11 @@
-import { PrismaClient, PropertyType, PropertyStatus, Role, BookingStatus, PaymentStatus } from '@prisma/client';
+import {
+  PrismaClient,
+  PropertyType,
+  PropertyStatus,
+  Role,
+  BookingStatus,
+  PaymentStatus,
+} from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 import * as dotenv from 'dotenv';
@@ -36,8 +43,8 @@ async function main() {
       isVerified: true,
       profile: {
         create: {
-          firstName: 'Kondwani',
-          lastName: 'Mwale',
+          firstName: 'Yusuf',
+          lastName: 'Raja',
           phone: '+265991234001',
           bio: 'Property manager at Smart Properties Malawi',
         },
@@ -53,8 +60,8 @@ async function main() {
       isVerified: true,
       profile: {
         create: {
-          firstName: 'Grace',
-          lastName: 'Banda',
+          firstName: 'Twareeq',
+          lastName: 'Hassan',
           phone: '+265881234002',
           bio: 'Looking for a comfortable home in Lilongwe',
         },
@@ -84,7 +91,8 @@ async function main() {
   const propertyData = [
     {
       title: 'Luxury 3-Bedroom Villa with Lake View',
-      description: 'A stunning villa with panoramic views of Lake Malawi. Features a private pool, manicured gardens, and lake access. Perfect for a relaxing getaway or business retreat.',
+      description:
+        'A stunning villa with panoramic views of Lake Malawi. Features a private pool, manicured gardens, and lake access. Perfect for a relaxing getaway or business retreat.',
       pricePerNight: 150000,
       city: 'Mangochi',
       address: 'Cape Maclear, Monkey Bay Road',
@@ -107,7 +115,8 @@ async function main() {
     },
     {
       title: 'Modern 2-Bedroom Apartment in Area 10',
-      description: 'A contemporary apartment in the heart of Lilongwe\'s Area 10. Walking distance to Capital City Mall, restaurants, and government offices. Fully furnished with high-speed WiFi.',
+      description:
+        "A contemporary apartment in the heart of Lilongwe's Area 10. Walking distance to Capital City Mall, restaurants, and government offices. Fully furnished with high-speed WiFi.",
       pricePerNight: 85000,
       city: 'Lilongwe',
       address: 'Plot 1234, Area 10',
@@ -130,7 +139,8 @@ async function main() {
     },
     {
       title: 'Cozy Family House in Blantyre',
-      description: 'A warm and spacious family home in the commercial hub of Malawi. Close to Chichiri Shopping Centre, Soche Hill, and quality schools. Ideal for families relocating to Blantyre.',
+      description:
+        'A warm and spacious family home in the commercial hub of Malawi. Close to Chichiri Shopping Centre, Soche Hill, and quality schools. Ideal for families relocating to Blantyre.',
       pricePerNight: 65000,
       city: 'Blantyre',
       address: 'Naperi Avenue, Chirimba',
@@ -152,7 +162,8 @@ async function main() {
     },
     {
       title: 'Historic Townhouse near UNIMA Campus',
-      description: 'Charming townhouse adjacent to the University of Malawi main campus. Perfect for academics, visiting lecturers, and students. Includes a study room and quick walk to Zomba town.',
+      description:
+        'Charming townhouse adjacent to the University of Malawi main campus. Perfect for academics, visiting lecturers, and students. Includes a study room and quick walk to Zomba town.',
       pricePerNight: 55000,
       city: 'Zomba',
       address: 'Chancellor College Road',
@@ -174,7 +185,8 @@ async function main() {
     },
     {
       title: 'Executive Studio in Mzuzu City Centre',
-      description: 'A smart studio apartment in the main commercial district of Mzuzu. Ideal for business travellers and professionals. Fully self-contained with air conditioning and high-speed internet.',
+      description:
+        'A smart studio apartment in the main commercial district of Mzuzu. Ideal for business travellers and professionals. Fully self-contained with air conditioning and high-speed internet.',
       pricePerNight: 45000,
       city: 'Mzuzu',
       address: 'Katoto Road, City Centre',
@@ -196,7 +208,8 @@ async function main() {
     },
     {
       title: 'Lakeside Cottage in Salima',
-      description: 'A peaceful cottage steps from the shores of Lake Malawi in Salima. Features a deck overlooking the water, braai area, and beach access. Great for holidays and long weekends.',
+      description:
+        'A peaceful cottage steps from the shores of Lake Malawi in Salima. Features a deck overlooking the water, braai area, and beach access. Great for holidays and long weekends.',
       pricePerNight: 75000,
       city: 'Salima',
       address: 'Lakeview Drive, Senga Bay',
@@ -226,7 +239,11 @@ async function main() {
         ...propData,
         ownerId: adminUser.id,
         images: {
-          create: images.map((url, i) => ({ url, publicId: `seed-image-${i}`, secureUrl: url })),
+          create: images.map((url, i) => ({
+            url,
+            publicId: `seed-image-${i}`,
+            secureUrl: url,
+          })),
         },
       },
     });
@@ -288,7 +305,9 @@ async function main() {
     },
   });
 
-  console.log('💳 Created 1 sample confirmed booking with payment, invoice, and receipt');
+  console.log(
+    '💳 Created 1 sample confirmed booking with payment, invoice, and receipt',
+  );
 
   // ─── Create Sample Review ────────────────────────────────────────────────────
   await prisma.review.create({
@@ -300,7 +319,8 @@ async function main() {
       comfort: 5,
       location: 4,
       value: 4,
-      comment: 'Absolutely stunning villa! The lake view is breathtaking and the pool was perfect. Highly recommend for a family vacation in Malawi.',
+      comment:
+        'Absolutely stunning villa! The lake view is breathtaking and the pool was perfect. Highly recommend for a family vacation in Malawi.',
     },
   });
 
@@ -313,7 +333,8 @@ async function main() {
       comfort: 5,
       location: 5,
       value: 4,
-      comment: 'Great apartment in a central area. Very convenient for business. Fast WiFi and secure parking.',
+      comment:
+        'Great apartment in a central area. Very convenient for business. Fast WiFi and secure parking.',
     },
   });
 

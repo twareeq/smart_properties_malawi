@@ -6,7 +6,8 @@ import {
   requestModification,
   downloadAgreement,
   getAdminBookings,
-  getAdminBookingDetail
+  getAdminBookingDetail,
+  getTenantBookingDetail
 } from '../controllers/booking.controller';
 import { validateRequest } from '../middleware/validateRequest';
 import { createBookingSchema, modifyBookingSchema } from '../validations/booking.schema';
@@ -19,6 +20,7 @@ router.use(authenticate);
 // Tenant Routes
 router.post('/', validateRequest(createBookingSchema), createBooking);
 router.get('/my-bookings', getMyBookings);
+router.get('/:id', getTenantBookingDetail);
 router.post('/:id/modify', validateRequest(modifyBookingSchema), requestModification);
 router.get('/:id/agreement', downloadAgreement);
 

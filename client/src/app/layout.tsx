@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import "leaflet/dist/leaflet.css";
 import { ReactQueryClientProvider } from "@/components/providers/ReactQueryProvider";
 import { ToastProvider } from "@/components/providers/ToastProvider";
 import { AuthHydrator } from "@/components/providers/AuthHydrator";

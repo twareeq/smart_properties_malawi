@@ -23,8 +23,18 @@ export default function Footer() {
               <span className="flex items-center gap-2"><Mail className="w-4 h-4 text-primary/70" /> info@smartproperties.mw</span>
             </div>
             <div className="flex gap-3 mt-6">
-              {[Facebook, Twitter, Instagram].map((Icon, i) => (
-                <a key={i} href="#" className="w-9 h-9 rounded-full bg-white/5 hover:bg-primary/20 border border-white/10 hover:border-primary/40 flex items-center justify-center transition-colors">
+              {[
+                { Icon: Facebook, href: 'https://facebook.com' },
+                { Icon: Twitter, href: 'https://twitter.com' },
+                { Icon: Instagram, href: 'https://instagram.com' }
+              ].map(({ Icon, href }, i) => (
+                <a 
+                  key={i} 
+                  href={href} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-9 h-9 rounded-full bg-white/5 hover:bg-primary/20 border border-white/10 hover:border-primary/40 flex items-center justify-center transition-colors"
+                >
                   <Icon className="w-4 h-4" />
                 </a>
               ))}

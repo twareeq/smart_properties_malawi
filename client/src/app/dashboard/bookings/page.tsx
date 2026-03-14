@@ -1,29 +1,45 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useMyBookings, useInitiatePayment, useVerifyPayment } from '@/hooks/useBookings';
+import {
+  useMyBookings,
+  useInitiatePayment,
+  useVerifyPayment,
+} from '@/hooks/useBookings';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/providers/ToastProvider';
 import Link from 'next/link';
-import { Calendar, MapPin, CreditCard, Home, Loader2 } from 'lucide-react';
+import {
+  Calendar,
+  MapPin,
+  CreditCard,
+  Home,
+  Loader2,
+  FileText,
+} from 'lucide-react';
 
-const statusVariant: Record<string, 'success' | 'warning' | 'secondary' | 'destructive'> = {
+const statusVariant: Record<
+  string,
+  'success' | 'warning' | 'secondary' | 'destructive'
+> = {
   CONFIRMED: 'success',
   PENDING: 'warning',
   CANCELLED: 'destructive',
   COMPLETED: 'secondary',
 };
 
-export default function BookingsPage() {
+function BookingsList() {
   const { data: bookings, isLoading, refetch } = useMyBookings();
-  const { mutateAsync: initiatePayment, isPending: isInitiating } = useInitiatePayment();
-  const { mutateAsync: verifyPayment, isPending: isVerifying } = useVerifyPayment();
+  const { mutateAsync: initiatePayment, isPending: isInitiating } =
+    useInitiatePayment();
+  const { mutateAsync: verifyPayment, isPending: isVerifying } =
+    useVerifyPayment();
   const { addToast } = useToast();
-  
+
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -36,12 +52,15 @@ export default function BookingsPage() {
       const result = await initiatePayment(bookingId);
       const checkoutUrl = result?.data?.data?.checkoutUrl;
       if (checkoutUrl) {
-        window.location.href = checkoutUrl;
+        window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
       } else {
         addToast('No checkout URL returned.', 'error');
       }
     } catch (err: any) {
-      addToast(err?.response?.data?.message || 'Payment failed to initiate.', 'error');
+      addToast(
+        err?.response?.data?.message || 'Payment failed to initiate.',
+        'error',
+      );
     }
   };
 
@@ -50,58 +69,132 @@ export default function BookingsPage() {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">My Bookings</h1>
         {isVerifying ? (
-           <div className="flex items-center gap-2 text-primary p-4 bg-primary/10 rounded-xl">
-             <Loader2 className="w-5 h-5 animate-spin"/> Verifying payment...
-           </div>
+          <div className="flex items-center gap-2 text-primary p-4 bg-primary/10 rounded-xl">
+            <Loader2 className="w-5 h-5 animate-spin" /> Verifying
+            payment...
+          </div>
         ) : null}
-        {[1, 2, 3].map((i) => <Skeleton key={i} className="h-36 w-full rounded-xl" />)}
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-36 w-full rounded-xl" />
+        ))}
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">My Bookings</h1>
+      <h1 className="text-2xl font-bold text-gray-900">
+        My Bookings
+      </h1>
 
       {!bookings || bookings.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl shadow-sm">
           <Calendar className="w-14 h-14 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">No bookings yet</h3>
-          <p className="text-gray-400 mb-6">Explore properties and make your first reservation.</p>
-          <Link href="/properties"><Button>Browse Properties</Button></Link>
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">
+            No bookings yet
+          </h3>
+          <p className="text-gray-400 mb-6">
+            Explore properties and make your first reservation.
+          </p>
+          <Link href="/properties">
+            <Button>Browse Properties</Button>
+          </Link>
         </div>
       ) : (
         <div className="space-y-4">
           {bookings.map((booking: any) => (
-            <Card key={booking.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
+            <Card
+              key={booking.id}
+              className="border-0 shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
+              onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}
+            >
               <CardContent className="pt-5 pb-5">
                 <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
                   <div className="flex gap-4 items-start">
-                    <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Home className="w-7 h-7 text-primary" />
+                    <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-primary group-hover:text-white transition-colors">
+                      <Home className="w-7 h-7 text-primary group-hover:text-white" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">{booking.property?.title}</h3>
+                      <h3 className="font-semibold text-gray-900 group-hover:text-primary transition-colors">
+                        {booking.property?.title}
+                      </h3>
                       <div className="flex items-center gap-1 text-gray-500 text-sm mt-1">
-                        <MapPin className="w-3.5 h-3.5" /> {booking.property?.city}
+                        <MapPin className="w-3.5 h-3.5" />{' '}
+                        {booking.property?.city}
                       </div>
                       <div className="flex items-center gap-1 text-gray-500 text-sm mt-0.5">
                         <Calendar className="w-3.5 h-3.5" />
-                        <span>{new Date(booking.checkIn).toLocaleDateString()}</span>
-                        {booking.checkOut && <span>→ {new Date(booking.checkOut).toLocaleDateString()}</span>}
-                        {booking.isFlexibleStay && <span className="text-blue-500">(Flexible)</span>}
+                        <span>
+                          {new Date(
+                            booking.checkIn,
+                          ).toLocaleDateString()}
+                        </span>
+                        {booking.checkOut && (
+                          <span>
+                            →{' '}
+                            {new Date(
+                              booking.checkOut,
+                            ).toLocaleDateString()}
+                          </span>
+                        )}
+                        {booking.isFlexibleStay && (
+                          <span className="text-blue-500">
+                            (Flexible)
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-col md:items-end gap-2">
-                    <Badge variant={statusVariant[booking.status] || 'secondary'}>{booking.status}</Badge>
-                    <p className="font-bold text-gray-900">MWK {Number(booking.totalCost).toLocaleString()}</p>
-                    {booking.status === 'PENDING' && (
-                      <Button size="sm" className="flex items-center gap-1" onClick={() => handlePay(booking.id)} disabled={isInitiating}>
-                        {isInitiating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <CreditCard className="w-4 h-4" />} Pay Now
+                  <div className="flex flex-col md:items-end gap-2 w-full md:w-auto">
+                    <div className="flex items-center justify-between md:justify-end gap-2 w-full">
+                       <Badge
+                        variant={
+                          statusVariant[booking.status] || 'secondary'
+                        }
+                      >
+                        {booking.status}
+                      </Badge>
+                      <p className="font-bold text-gray-900">
+                        MWK {Number(booking.totalCost).toLocaleString()}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-2 md:pt-0" onClick={(e) => e.stopPropagation()}>
+                      {booking.status === 'PENDING' && (
+                        <Link
+                          href={`/dashboard/invoices`}
+                          className="flex items-center gap-1 bg-red-50 py-1 text-sm rounded-md px-2 hover:bg-red-100 text-red-700"
+                        >
+                          <FileText className="w-3.5 h-3.5" /> Invoice
+                        </Link>
+                      )}
+                      
+                      {booking.status === 'PENDING' && (
+                        <Button
+                          size="sm"
+                          className="flex items-center gap-1"
+                          onClick={() => handlePay(booking.id)}
+                          disabled={isInitiating}
+                        >
+                          {isInitiating ? (
+                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                          ) : (
+                            <CreditCard className="w-4 h-4" />
+                          )}{' '}
+                          Pay Now
+                        </Button>
+                      )}
+
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-primary hover:bg-primary/5 ml-auto"
+                        onClick={() => router.push(`/dashboard/bookings/${booking.id}`)}
+                      >
+                        View Details
                       </Button>
-                    )}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -110,5 +203,20 @@ export default function BookingsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function BookingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">My Bookings</h1>
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-36 w-full rounded-xl" />
+        ))}
+      </div>
+    }>
+      <BookingsList />
+    </Suspense>
   );
 }

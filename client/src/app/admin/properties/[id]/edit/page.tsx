@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useParams, useRouter } from 'next/navigation';
-import { useProperty, useUpdateProperty, useUploadPropertyImage } from '@/hooks/useProperties';
+import { useProperty, useUpdateProperty, useUploadPropertyImage, useSetPrimaryPropertyImage } from '@/hooks/useProperties';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -13,10 +13,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, UploadCloud, X, ImagePlus, Trash2 } from 'lucide-react';
+import { Loader2, UploadCloud, X, ImagePlus, Trash2, MapPin } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import api from '@/lib/api';
+
+const MapPreview = dynamic(() => import('@/components/MapPreview'), { 
+  ssr: false,
+  loading: () => <div className="h-[300px] bg-gray-100 rounded-lg animate-pulse flex items-center justify-center text-gray-400">Loading map...</div>
+});
 
 const schema = z.object({
   title: z.string().min(5),
@@ -35,6 +41,9 @@ const schema = z.object({
   isFurnished: z.boolean().default(false),
   hasSecurity: z.boolean().default(false),
   hasGarden: z.boolean().default(false),
+  latitude: z.string().optional(),
+  longitude: z.string().optional(),
+  googleMapsUrl: z.string().url("Must be a valid URL").optional().or(z.literal('')),
 });
 
 type EditPropertyForm = z.infer<typeof schema>;
@@ -60,9 +69,10 @@ export default function EditPropertyPage() {
   const { data: property, isLoading } = useProperty(id);
   const { mutateAsync: updateProperty, isPending: saving } = useUpdateProperty(id);
   const { mutateAsync: uploadImage } = useUploadPropertyImage();
+  const { mutateAsync: setPrimaryImage } = useSetPrimaryPropertyImage();
 
   // Existing images from DB
-  const [existingImages, setExistingImages] = useState<{ id: string; secureUrl: string; thumbnailUrl?: string | null }[]>([]);
+  const [existingImages, setExistingImages] = useState<{ id: string; secureUrl: string; thumbnailUrl?: string | null; isPrimary?: boolean }[]>([]);
   // New local file selections
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -70,9 +80,27 @@ export default function EditPropertyPage() {
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<EditPropertyForm>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<EditPropertyForm>({
     resolver: zodResolver(schema),
   });
+
+  const watchLat = watch('latitude');
+  const watchLng = watch('longitude');
+
+  // Parse Google Maps URL to extract coordinates
+  const handleUrlParse = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    if (!url) return;
+    
+    // Match common Google Maps URL coordinate patterns
+    const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || url.match(/center=(-?\d+\.\d+),(-?\d+\.\d+)/);
+    
+    if (match && match[1] && match[2]) {
+      setValue('latitude', match[1]);
+      setValue('longitude', match[2]);
+      addToast('Coordinates extracted from URL!', 'success');
+    }
+  };
 
   // Pre-fill form when property data loads
   useEffect(() => {
@@ -94,6 +122,9 @@ export default function EditPropertyPage() {
         isFurnished: property.isFurnished,
         hasSecurity: property.hasSecurity,
         hasGarden: property.hasGarden,
+        latitude: property.latitude ? String(property.latitude) : '',
+        longitude: property.longitude ? String(property.longitude) : '',
+        googleMapsUrl: property.googleMapsUrl || '',
       });
       setExistingImages(property.images || []);
     }
@@ -125,6 +156,8 @@ export default function EditPropertyPage() {
       setDeletingImageId(imageId);
       await api.delete(`/uploads/property-image/${imageId}`);
       setExistingImages(prev => prev.filter(img => img.id !== imageId));
+      queryClient.invalidateQueries({ queryKey: ['property', id] });
+      queryClient.invalidateQueries({ queryKey: ['myProperties'] });
       addToast('Photo removed.', 'success');
     } catch {
       addToast('Failed to remove photo.', 'error');
@@ -133,14 +166,41 @@ export default function EditPropertyPage() {
     }
   };
 
+  const handleSetPrimary = async (imageId: string) => {
+    try {
+      setDeletingImageId(imageId); // Reuse loading state string for visual feedback
+      await setPrimaryImage(imageId);
+      
+      // Update local state optimistic UI
+      setExistingImages(prev => prev.map(img => ({
+        ...img,
+        isPrimary: img.id === imageId
+      })));
+      
+      queryClient.invalidateQueries({ queryKey: ['property', id] });
+      queryClient.invalidateQueries({ queryKey: ['myProperties'] });
+      addToast('Cover photo updated.', 'success');
+    } catch {
+      addToast('Failed to set cover photo.', 'error');
+    } finally {
+      setDeletingImageId(null);
+    }
+  };
+
   const onSubmit = async (data: EditPropertyForm) => {
     try {
-      await updateProperty({
+      const payload: any = {
         ...data,
         pricePerNight: parseFloat(data.pricePerNight),
         bedrooms: parseInt(data.bedrooms),
         bathrooms: parseInt(data.bathrooms),
-      });
+      };
+
+      if (data.latitude) payload.latitude = parseFloat(data.latitude);
+      if (data.longitude) payload.longitude = parseFloat(data.longitude);
+      if (data.googleMapsUrl) payload.googleMapsUrl = data.googleMapsUrl;
+
+      await updateProperty(payload);
 
       if (newFiles.length > 0) {
         setUploading(true);
@@ -271,6 +331,69 @@ export default function EditPropertyPage() {
           </CardContent>
         </Card>
 
+        {/* ── Map Location ─────────────────────────────────────── */}
+        <Card className="border-0 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-primary" />
+              Map Location
+            </CardTitle>
+            <CardDescription>Enter coordinates directly or paste a Google Maps URL to auto-fill.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <Label>Google Maps URL (Optional)</Label>
+                <Input placeholder="https://www.google.com/maps/..." {...register('googleMapsUrl')} onChange={(e) => {
+                  register('googleMapsUrl').onChange(e);
+                  handleUrlParse(e);
+                }} />
+                {errors.googleMapsUrl && <p className="text-red-500 text-xs">{errors.googleMapsUrl.message}</p>}
+                <p className="text-xs text-gray-500 mt-1">Paste a link to extract coordinates automatically.</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label>Latitude</Label>
+                  <Input placeholder="e.g. -13.962612" {...register('latitude')} />
+                  {errors.latitude && <p className="text-red-500 text-xs">{errors.latitude.message}</p>}
+                </div>
+                <div className="space-y-1">
+                  <Label>Longitude</Label>
+                  <Input placeholder="e.g. 33.774119" {...register('longitude')} />
+                  {errors.longitude && <p className="text-red-500 text-xs">{errors.longitude.message}</p>}
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800 border border-blue-100">
+                <strong>How to find coordinates:</strong>
+                <ol className="list-decimal ml-4 mt-1 space-y-1">
+                  <li>Open Google Maps and find the property.</li>
+                  <li>Right-click the exact location on the map.</li>
+                  <li>Click the coordinates at the top of the menu to copy them.</li>
+                  <li>Paste the first number into Latitude, and the second into Longitude.</li>
+                </ol>
+              </div>
+            </div>
+
+            {/* Map Preview */}
+            {watchLat && watchLng && !isNaN(parseFloat(watchLat)) && !isNaN(parseFloat(watchLng)) ? (
+              <div className="mt-4">
+                <Label className="mb-2 block">Live Map Preview</Label>
+                <MapPreview 
+                  latitude={parseFloat(watchLat)} 
+                  longitude={parseFloat(watchLng)} 
+                  height="300px" 
+                />
+              </div>
+            ) : (
+              <div className="h-[200px] border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-gray-400 mt-4">
+                Enter valid coordinates to see preview
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Photo Management */}
         <Card className="border-0 shadow-sm">
           <CardHeader>
@@ -283,22 +406,34 @@ export default function EditPropertyPage() {
             {/* Existing images */}
             {existingImages.length > 0 && (
               <div>
-                <p className="text-xs text-gray-500 mb-2 font-medium">Current Photos</p>
+                <p className="text-xs text-gray-500 mb-2 font-medium">Current Photos (Click ★ to set Cover)</p>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                   {existingImages.map((img, i) => (
                     <div key={img.id} className="relative group">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img.thumbnailUrl || img.secureUrl} alt={`img-${i}`} className="w-full h-20 object-cover rounded-lg border" />
-                      {i === 0 && (
-                        <span className="absolute bottom-1 left-1 bg-primary text-white text-[10px] px-1 rounded">Cover</span>
+                      <img src={img.thumbnailUrl || img.secureUrl} alt={`img-${i}`} className="w-full h-24 object-cover rounded-lg border" />
+                      
+                      {/* Cover Badge or Set Cover Button */}
+                      {img.isPrimary ? (
+                        <span className="absolute bottom-1 left-1 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm z-10">Cover</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleSetPrimary(img.id)}
+                          title="Set as Cover Photo"
+                          className="absolute bottom-1 left-1 bg-gray-900/60 hover:bg-primary text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-all z-10"
+                        >
+                          ★ Set Cover
+                        </button>
                       )}
+
                       <button
                         type="button"
                         onClick={() => deleteExistingImage(img.id)}
                         disabled={deletingImageId === img.id}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 disabled:opacity-50"
                       >
-                        {deletingImageId === img.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+                        {deletingImageId === img.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                   ))}

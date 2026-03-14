@@ -55,3 +55,9 @@ export function useDeletePropertyImage() {
     mutationFn: (imageId: string) => propertyService.deletePropertyImage(imageId),
   });
 }
+
+export function useSetPrimaryPropertyImage() {
+  return useMutation({
+    mutationFn: (imageId: string) => propertyService.setPrimaryPropertyImage(imageId),
+  });
+}

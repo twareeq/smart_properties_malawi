@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getCloudinarySignature, saveMediaMetadata, deleteMedia } from '../controllers/upload.controller';
+import { getCloudinarySignature, saveMediaMetadata, deleteMedia, setPrimaryImage } from '../controllers/upload.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { validateRequest } from '../middleware/validateRequest';
 import { saveMediaSchema } from '../validations/property.schema';
@@ -14,5 +14,8 @@ router.post('/property-image', authenticate, validateRequest(saveMediaSchema), s
 
 // Delete an image from DB and Cloudinary
 router.delete('/property-image/:imageId', authenticate, deleteMedia);
+
+// Set an image as the primary cover photo
+router.patch('/property-image/:imageId/primary', authenticate, setPrimaryImage);
 
 export default router;

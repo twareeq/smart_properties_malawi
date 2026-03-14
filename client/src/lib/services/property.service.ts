@@ -62,5 +62,6 @@ export const propertyService = {
     });
   },
   deletePropertyImage: (imageId: string) => api.delete(`/uploads/property-image/${imageId}`),
+  setPrimaryPropertyImage: (imageId: string) => api.patch(`/uploads/property-image/${imageId}/primary`),
 };
 
