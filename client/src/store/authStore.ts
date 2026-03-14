@@ -22,6 +22,7 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  hasHydrated: boolean;
   setAuth: (user: User, token: string) => void;
   logout: () => void;
   fetchUser: () => Promise<void>;
@@ -32,6 +33,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
   isAuthenticated: false,
+  hasHydrated: false,
 
   setAuth: (user, token) => {
     if (typeof window !== 'undefined') {
@@ -71,9 +73,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (token && userStr) {
         try {
           const user = JSON.parse(userStr);
-          set({ user, token, isAuthenticated: true });
+          set({ user, token, isAuthenticated: true, hasHydrated: true });
+          return;
         } catch { /* ignore */ }
       }
+      set({ hasHydrated: true });
     }
   },
 }));

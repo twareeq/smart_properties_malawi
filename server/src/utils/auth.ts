@@ -4,8 +4,8 @@ import { prisma } from '../config/prisma';
 import { config } from '../config/env';
 
 export const generateToken = (id: string, role: string): string => {
-  return jwt.sign({ id, role }, config.jwtSecret, {
-    expiresIn: config.jwtExpiresIn,
+  return jwt.sign({ id, role }, config.jwtSecret as string, {
+    expiresIn: config.jwtExpiresIn as any,
   });
 };
 

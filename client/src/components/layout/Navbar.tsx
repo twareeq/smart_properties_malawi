@@ -20,7 +20,7 @@ import { useToast } from "@/components/providers/ToastProvider";
 import { Home, Menu, X, LogOut, Loader2 } from "lucide-react";
 
 export default function Navbar() {
-  const { isAuthenticated, logout, user } = useAuthStore();
+  const { isAuthenticated, logout, user, hasHydrated } = useAuthStore();
   const router = useRouter();
   const { addToast } = useToast();
   const [scrolled, setScrolled] = useState(false);
@@ -155,8 +155,10 @@ export default function Navbar() {
         </div>
 
         {/* Desktop CTA */}
-        <div className="hidden md:flex items-center gap-3">
-          {isAuthenticated ? (
+        <div className="hidden md:flex items-center gap-3 min-w-[120px] justify-end">
+          {!hasHydrated ? (
+            <div className="w-20 h-8 bg-white/10 animate-pulse rounded-md" />
+          ) : isAuthenticated ? (
             <>
               <span
                 className={`text-sm font-medium ${
@@ -220,7 +222,11 @@ export default function Navbar() {
           >
             Property List
           </Link>
-          {isAuthenticated ? (
+          {!hasHydrated ? (
+            <div className="pt-2">
+              <div className="w-full h-10 bg-gray-100 animate-pulse rounded-md" />
+            </div>
+          ) : isAuthenticated ? (
             <>
               <Link
                 href={user?.role === "ADMIN" ? "/admin" : "/dashboard"}

@@ -31,12 +31,14 @@ const schema = z.object({
   isFurnished: z.boolean().default(false),
   hasSecurity: z.boolean().default(false),
   hasGarden: z.boolean().default(false),
+  status: z.enum(['AVAILABLE', 'MAINTENANCE', 'RENTED', 'HIDDEN']).default('AVAILABLE'),
 });
 
 type CreatePropertyForm = z.infer<typeof schema>;
 
 const CITIES = ['Lilongwe', 'Blantyre', 'Zomba', 'Mangochi', 'Mzuzu', 'Salima', 'Karonga', 'Dedza', 'Liwonde'];
 const TYPES = ['APARTMENT', 'HOUSE', 'VILLA', 'COMMERCIAL', 'LAND'];
+const STATUSES = ['AVAILABLE', 'MAINTENANCE', 'RENTED', 'HIDDEN'];
 const AMENITIES = [
   { key: 'hasWiFi', label: 'WiFi' },
   { key: 'hasPool', label: 'Swimming Pool' },
@@ -138,10 +140,16 @@ export default function CreatePropertyPage() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>Price per Night (MWK) *</Label>
-                <Input type="number" placeholder="e.g. 85000" {...register('pricePerNight')} />
-                {errors.pricePerNight && <p className="text-red-500 text-xs">Required</p>}
+                <Label>Status</Label>
+                <Select {...register('status')}>
+                  {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</option>)}
+                </Select>
               </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Price per Night (MWK) *</Label>
+              <Input type="number" placeholder="e.g. 85000" {...register('pricePerNight')} />
+              {errors.pricePerNight && <p className="text-red-500 text-xs">Required</p>}
             </div>
           </CardContent>
         </Card>

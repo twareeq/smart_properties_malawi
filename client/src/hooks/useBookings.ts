@@ -43,3 +43,20 @@ export function useReceipts() {
     queryFn: () => paymentService.getReceipts().then((r) => r.data.data),
   });
 }
+
+// Admin hooks
+export function useAdminBookings() {
+  return useQuery({
+    queryKey: ['admin-bookings'],
+    queryFn: () => bookingService.getAdminBookings().then((r) => r.data.data),
+  });
+}
+
+export function useAdminBookingDetail(id: string) {
+  return useQuery({
+    queryKey: ['admin-booking', id],
+    queryFn: () => bookingService.getAdminBookingDetail(id).then((r) => r.data.data),
+    enabled: !!id,
+  });
+}
+

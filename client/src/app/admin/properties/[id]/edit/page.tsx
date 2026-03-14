@@ -28,7 +28,7 @@ const schema = z.object({
   type: z.enum(['APARTMENT', 'HOUSE', 'VILLA', 'COMMERCIAL', 'LAND']),
   bedrooms: z.string().min(1),
   bathrooms: z.string().min(1),
-  status: z.enum(['AVAILABLE', 'MAINTENANCE', 'HIDDEN']),
+  status: z.enum(['AVAILABLE', 'MAINTENANCE', 'RENTED', 'HIDDEN']),
   hasWiFi: z.boolean().default(false),
   hasPool: z.boolean().default(false),
   hasParking: z.boolean().default(false),
@@ -41,7 +41,7 @@ type EditPropertyForm = z.infer<typeof schema>;
 
 const CITIES = ['Lilongwe', 'Blantyre', 'Zomba', 'Mangochi', 'Mzuzu', 'Salima', 'Karonga', 'Dedza', 'Liwonde'];
 const TYPES = ['APARTMENT', 'HOUSE', 'VILLA', 'COMMERCIAL', 'LAND'];
-const STATUSES = ['AVAILABLE', 'MAINTENANCE', 'HIDDEN'];
+const STATUSES = ['AVAILABLE', 'MAINTENANCE', 'RENTED', 'HIDDEN'];
 const AMENITIES = [
   { key: 'hasWiFi', label: 'WiFi' },
   { key: 'hasPool', label: 'Swimming Pool' },
@@ -87,7 +87,7 @@ export default function EditPropertyPage() {
         type: property.type,
         bedrooms: String(property.bedrooms),
         bathrooms: String(property.bathrooms),
-        status: property.status === 'RENTED' ? 'AVAILABLE' : property.status,
+        status: property.status,
         hasWiFi: property.hasWiFi,
         hasPool: property.hasPool,
         hasParking: property.hasParking,

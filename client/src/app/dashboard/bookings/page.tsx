@@ -28,20 +28,8 @@ export default function BookingsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const payment = searchParams.get('payment');
-    const tx_ref = searchParams.get('tx_ref');
-    
-    if (payment === 'verify' && tx_ref) {
-      verifyPayment(tx_ref).then(() => {
-        addToast('Payment verified successfully!', 'success');
-        refetch();
-        router.replace('/dashboard/bookings');
-      }).catch((err) => {
-        addToast(err?.response?.data?.message || 'Payment verification failed.', 'error');
-        router.replace('/dashboard/bookings');
-      });
-    }
-  }, [searchParams, verifyPayment, addToast, router, refetch]);
+    // Left empty since callback page will handle return logic directly
+  }, []);
 
   const handlePay = async (bookingId: string) => {
     try {

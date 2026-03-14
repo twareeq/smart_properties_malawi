@@ -5,4 +5,8 @@ export const bookingService = {
     api.post('/bookings', data),
   getMyBookings: () => api.get('/bookings/my-bookings'),
   requestModification: (bookingId: string, data: any) => api.post(`/bookings/${bookingId}/modify`, data),
+  // Admin
+  getAdminBookings: () => api.get('/bookings/admin/all'),
+  getAdminBookingDetail: (id: string) => api.get(`/bookings/admin/${id}`),
 };
+

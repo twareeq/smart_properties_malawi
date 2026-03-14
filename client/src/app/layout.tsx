@@ -4,6 +4,7 @@ import "./globals.css";
 import { ReactQueryClientProvider } from "@/components/providers/ReactQueryProvider";
 import { ToastProvider } from "@/components/providers/ToastProvider";
 import { AuthHydrator } from "@/components/providers/AuthHydrator";
+import { SessionTimeoutProvider } from "@/components/providers/SessionTimeoutProvider";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
@@ -24,11 +25,14 @@ export default function RootLayout({
       <body className={inter.className}>
         <ReactQueryClientProvider>
           <ToastProvider>
-            <div className="min-h-screen flex flex-col">
-              <Navbar />
-              <main className="flex-1 mt-[64px]">{children}</main>
-              <Footer />
-            </div>
+            <AuthHydrator />
+            <SessionTimeoutProvider>
+              <div className="min-h-screen flex flex-col">
+                <Navbar />
+                <main className="flex-1 mt-[64px]">{children}</main>
+                <Footer />
+              </div>
+            </SessionTimeoutProvider>
           </ToastProvider>
         </ReactQueryClientProvider>
       </body>

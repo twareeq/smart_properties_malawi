@@ -38,8 +38,8 @@ export const register = async (req: Request, res: Response) => {
 
     const token = generateToken(newUser.id, newUser.role);
 
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = newUser;
+    // Remove passwordHash from response
+    const { passwordHash: _, ...userWithoutPassword } = newUser;
 
     return sendSuccess(res, 201, true, 'User registered successfully', {
       user: userWithoutPassword,

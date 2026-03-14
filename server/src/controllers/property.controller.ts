@@ -161,6 +161,15 @@ export const getPropertyById = async (req: Request, res: Response) => {
       return sendError(res, 404, false, 'Property not found');
     }
 
+    // Access control: If property is not PUBLIC/AVAILABLE, only the owner can see the full details.
+    // This prevents one admin from seeing another's hidden/draft listings if they guess the ID.
+    if (property.status !== 'AVAILABLE') {
+      const userId = (req as any).user?.id;
+      if (property.ownerId !== userId) {
+        return sendError(res, 403, false, 'Not authorized to view this property listing');
+      }
+    }
+
     // Optional: Log view
     try {
       await prisma.propertyView.create({
@@ -189,8 +198,8 @@ export const updateProperty = async (req: Request, res: Response) => {
     // check ownership
     const prop = await prisma.property.findUnique({ where: { id } });
     if (!prop) return sendError(res, 404, false, 'Property not found');
-    if (prop.ownerId !== ownerId && (req as any).user.role !== 'ADMIN') {
-      return sendError(res, 403, false, 'Not authorized to strictly update this property');
+    if (prop.ownerId !== ownerId) {
+      return sendError(res, 403, false, 'Not authorized to update this property');
     }
 
     const updatedProperty = await prisma.property.update({
@@ -212,8 +221,8 @@ export const deleteProperty = async (req: Request, res: Response) => {
     // check ownership
     const prop = await prisma.property.findUnique({ where: { id } });
     if (!prop) return sendError(res, 404, false, 'Property not found');
-    if (prop.ownerId !== ownerId && (req as any).user.role !== 'ADMIN') {
-      return sendError(res, 403, false, 'Not authorized');
+    if (prop.ownerId !== ownerId) {
+      return sendError(res, 403, false, 'Not authorized to delete this property');
     }
 
     // hard delete
