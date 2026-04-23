@@ -42,3 +42,37 @@ export const getAdminDashboardMetrics = async (req: Request, res: Response) => {
     return sendError(res, 500, false, 'Failed to fetch admin metrics', error.message);
   }
 };
+
+export const getPublicStats = async (req: Request, res: Response) => {
+  try {
+    const [confirmedBookings, distinctCities, positiveReviews, totalReviews] = await Promise.all([
+      // Property Sells (Confirmed/Completed bookings)
+      prisma.booking.count({
+        where: { status: { in: ['CONFIRMED', 'COMPLETED'] } }
+      }),
+      // Cities & Locations
+      prisma.property.groupBy({
+        by: ['city'],
+      }),
+      // Positive Reviews (Rating >= 4)
+      prisma.review.count({
+        where: { rating: { gte: 4 } }
+      }),
+      // Total Reviews (for satisfaction rate)
+      prisma.review.count()
+    ]);
+
+    const satisfactionRate = totalReviews > 0 ? (positiveReviews / totalReviews) * 100 : 100;
+
+    const stats = {
+      propertySells: confirmedBookings,
+      citiesCount: distinctCities.length,
+      positiveReviews: positiveReviews,
+      satisfactionRate: Math.round(satisfactionRate)
+    };
+
+    return sendSuccess(res, 200, true, 'Public stats fetched successfully', stats);
+  } catch (error: any) {
+    return sendError(res, 500, false, 'Failed to fetch public stats', error.message);
+  }
+};

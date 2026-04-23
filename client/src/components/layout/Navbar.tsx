@@ -87,7 +87,7 @@ export default function Navbar() {
           <AlertDialogDescription className="pl-[52px] text-gray-600 text-sm leading-relaxed">
             Are you sure you want to sign out,{" "}
             <span className="font-semibold text-gray-800">
-              {user?.email?.split("@")[0]}
+              {user?.profile?.firstName || user?.email?.split("@")[0]}
             </span>
             ? You'll need to sign in again to access your dashboard.
           </AlertDialogDescription>
@@ -165,7 +165,7 @@ export default function Navbar() {
                   scrolled ? "text-gray-600" : "text-white/80"
                 }`}
               >
-                {user?.email?.split("@")[0]}
+                {user?.profile?.firstName || user?.email?.split("@")[0]}
               </span>
               <SignOutButton />
             </>

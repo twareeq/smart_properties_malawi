@@ -4,10 +4,11 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { bookingService } from '@/lib/services/booking.service';
 import { paymentService } from '@/lib/services/payment.service';
 
-export function useMyBookings() {
+export function useMyBookings(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['my-bookings'],
     queryFn: () => bookingService.getMyBookings().then((r) => r.data.data),
+    ...options,
   });
 }
 

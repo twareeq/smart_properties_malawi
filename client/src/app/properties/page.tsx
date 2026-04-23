@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useProperties } from '@/hooks/useProperties';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,20 +15,45 @@ import { motion } from 'framer-motion';
 const CITIES = ['Lilongwe', 'Blantyre', 'Zomba', 'Mangochi', 'Mzuzu', 'Salima', 'Karonga'];
 const PROPERTY_TYPES = ['APARTMENT', 'HOUSE', 'VILLA', 'COMMERCIAL', 'LAND'];
 
-export default function PropertiesPage() {
+function PropertiesPageContent() {
+  const searchParams = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    search: '',
-    city: '',
-    type: '',
-    minPrice: '',
-    maxPrice: '',
-    bedrooms: '',
-    hasWiFi: false,
-    hasPool: false,
-    page: 1,
-    limit: 12,
+  
+  // Initialize filters from URL search params
+  const [filters, setFilters] = useState(() => {
+    return {
+      search: searchParams.get('search') || '',
+      city: searchParams.get('city') || '',
+      type: searchParams.get('type') || '',
+      minPrice: searchParams.get('minPrice') || '',
+      maxPrice: searchParams.get('maxPrice') || '',
+      bedrooms: searchParams.get('bedrooms') || '',
+      hasWiFi: searchParams.get('hasWiFi') === 'true',
+      hasPool: searchParams.get('hasPool') === 'true',
+      page: parseInt(searchParams.get('page') || '1', 10),
+      limit: 12,
+    };
   });
+
+  // Keep filters in sync if URL changes (optional but good for back/forward buttons)
+  useEffect(() => {
+    setFilters({
+      search: searchParams.get('search') || '',
+      city: searchParams.get('city') || '',
+      type: (searchParams.get('type') || '').toUpperCase(),
+      minPrice: searchParams.get('minPrice') || '',
+      maxPrice: searchParams.get('maxPrice') || '',
+      bedrooms: searchParams.get('bedrooms') || '',
+      hasWiFi: searchParams.get('hasWiFi') === 'true',
+      hasPool: searchParams.get('hasPool') === 'true',
+      page: parseInt(searchParams.get('page') || '1', 10),
+      limit: 12,
+    });
+    // If any filter is present in URL, show the filter panel
+    if (searchParams.get('city') || searchParams.get('type') || searchParams.get('minPrice') || searchParams.get('maxPrice') || searchParams.get('bedrooms')) {
+      setShowFilters(true);
+    }
+  }, [searchParams]);
 
   const { data, isLoading, isError } = useProperties({
     search: filters.search || undefined,
@@ -47,6 +73,7 @@ export default function PropertiesPage() {
 
   const clearFilters = () => {
     setFilters({ search: '', city: '', type: '', minPrice: '', maxPrice: '', bedrooms: '', hasWiFi: false, hasPool: false, page: 1, limit: 12 });
+    window.history.pushState({}, '', '/properties');
   };
 
   const activeFilterCount = [filters.city, filters.type, filters.minPrice, filters.maxPrice, filters.bedrooms]
@@ -60,7 +87,7 @@ export default function PropertiesPage() {
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Browse Properties</h1>
-              {meta.total && <p className="text-gray-500 text-sm">{meta.total} properties available</p>}
+              {meta.total !== undefined && <p className="text-gray-500 text-sm">{meta.total} properties available</p>}
             </div>
             <div className="flex gap-2 items-center w-full sm:w-auto">
               <div className="relative flex-1 sm:w-80">
@@ -187,5 +214,17 @@ export default function PropertiesPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function PropertiesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <PropertiesPageContent />
+    </Suspense>
   );
 }

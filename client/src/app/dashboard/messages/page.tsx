@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useConversations, useMessages, useReplyMessage } from '@/hooks/useMessagesAndReviews';
 import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,9 +15,18 @@ export default function MessagesPage() {
   const { data: conversations, isLoading } = useConversations();
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: messages, refetch: refetchMessages } = useMessages(activeConversationId || '');
   const { mutateAsync: reply, isPending } = useReplyMessage();
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleReply = async () => {
     if (!replyText.trim() || !activeConversationId) return;
@@ -76,6 +85,7 @@ export default function MessagesPage() {
                       </div>
                     </div>
                   ))}
+                  <div ref={messagesEndRef} />
                 </div>
                 <div className="p-4 border-t flex gap-2">
                   <Textarea

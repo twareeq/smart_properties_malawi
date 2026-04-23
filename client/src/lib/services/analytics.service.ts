@@ -1,5 +1,6 @@
 import api from '../api';
 
 export const analyticsService = {
-  getDashboardMetrics: () => api.get('/analytics/metrics'),
+  getAdminMetrics: () => api.get('/analytics/metrics'),
+  getPublicStats: () => api.get('/analytics/public-stats'),
 };

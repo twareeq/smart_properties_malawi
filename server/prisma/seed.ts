@@ -240,7 +240,6 @@ async function main() {
         ownerId: adminUser.id,
         images: {
           create: images.map((url, i) => ({
-            url,
             publicId: `seed-image-${i}`,
             secureUrl: url,
           })),

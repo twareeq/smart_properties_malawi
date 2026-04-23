@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/prisma';
 import { sendSuccess, sendError } from '../utils/response';
+import { v4 as uuidv4 } from 'uuid';
 
 // ─── Admin: All Bookings ──────────────────────────────────────────────────────
 export const getAdminBookings = async (req: Request, res: Response) => {
@@ -138,7 +139,6 @@ export const createBooking = async (req: Request, res: Response) => {
       });
 
       // Generate strict reference for PayChangu early
-      const { v4: uuidv4 } = require('uuid');
       const reference = `TX-${uuidv4().substring(0, 8).toUpperCase()}-${Date.now()}`;
 
       // Create pending payment immediately
@@ -163,6 +163,8 @@ export const createBooking = async (req: Request, res: Response) => {
       });
 
       return booking;
+    }, {
+      timeout: 15000
     });
 
     // Notify Admin (we'll implement notifications later, placeholder here)

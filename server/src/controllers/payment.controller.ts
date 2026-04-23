@@ -220,6 +220,15 @@ export const verifyPayment = async (req: Request, res: Response) => {
           },
         });
 
+        await tx.notification.create({
+          data: {
+            userId: payment.booking.property.ownerId,
+            type: 'PAYMENT_SUCCESS',
+            title: 'New Payment Received',
+            message: `A payment of MWK ${payment.amount} was received for your property: ${payment.booking.property.title}.`,
+          },
+        });
+
         await tx.receipt.create({
           data: {
             paymentId: payment.id,
@@ -332,6 +341,15 @@ export const paychanguWebhook = async (
             type: 'PAYMENT_SUCCESS',
             title: 'Payment Successful',
             message: `Your payment of MWK ${payment.amount} for ${payment.booking.property.title} was successful. A lease agreement has been generated.`,
+          },
+        });
+
+        await tx.notification.create({
+          data: {
+            userId: payment.booking.property.ownerId,
+            type: 'PAYMENT_SUCCESS',
+            title: 'New Payment Received',
+            message: `A payment of MWK ${payment.amount} was received for your property: ${payment.booking.property.title}.`,
           },
         });
         await tx.receipt.create({

@@ -9,6 +9,7 @@ export function useConversations() {
   return useQuery({
     queryKey: ['conversations'],
     queryFn: () => messageService.getConversations().then((r) => r.data.data),
+    refetchInterval: 5000, // Sync conversations every 5s
   });
 }
 
@@ -17,6 +18,7 @@ export function useMessages(conversationId: string) {
     queryKey: ['messages', conversationId],
     queryFn: () => messageService.getMessages(conversationId).then((r) => r.data.data),
     enabled: !!conversationId,
+    refetchInterval: 3000, // Fast polling for active messages
   });
 }
 
@@ -51,6 +53,6 @@ export function useSubmitReview() {
 export function useAdminMetrics() {
   return useQuery({
     queryKey: ['admin-metrics'],
-    queryFn: () => analyticsService.getDashboardMetrics().then((r) => r.data.data),
+    queryFn: () => analyticsService.getAdminMetrics().then((r) => r.data.data),
   });
 }

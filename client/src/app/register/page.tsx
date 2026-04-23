@@ -1,9 +1,11 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useRegister } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,8 +25,10 @@ const registerSchema = z.object({
 
 type RegisterForm = z.infer<typeof registerSchema>;
 
-export default function RegisterPage() {
-  const { mutateAsync, isPending } = useRegister();
+function RegisterForm() {
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || undefined;
+  const { mutateAsync, isPending } = useRegister(redirectTo);
   const { addToast } = useToast();
 
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterForm>({
@@ -97,9 +101,26 @@ export default function RegisterPage() {
 
         <p className="text-center text-sm text-gray-600 mt-6">
           Already have an account?{' '}
-          <Link href="/login" className="text-primary font-semibold hover:underline">Sign in</Link>
+          <Link
+            href={redirectTo ? `/login?redirect=${encodeURIComponent(redirectTo)}` : '/login'}
+            className="text-primary font-semibold hover:underline"
+          >
+            Sign in
+          </Link>
         </p>
       </motion.div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   );
 }

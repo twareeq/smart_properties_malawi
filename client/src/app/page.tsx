@@ -1,53 +1,14 @@
+'use client';
+
 import Link from 'next/link';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Search, MapPin, Home, Building2, Trees, ChevronRight, Star, Shield, Calendar, MessageSquare } from 'lucide-react';
 import { PropertyCard } from '@/components/property/PropertyCard';
-
-const MOCK_PROPERTIES = [
-  {
-    id: '1',
-    title: 'Highland Park Residence',
-    pricePerNight: 150000,
-    city: 'Mangochi',
-    type: 'VILLA',
-    bedrooms: 4,
-    bathrooms: 3,
-    images: [{ id: 'img1', secureUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=800' }],
-    avgRating: 4.8,
-    status: 'AVAILABLE' as const,
-  },
-  {
-    id: '2',
-    title: 'The Atrium Residences',
-    pricePerNight: 80000,
-    city: 'Lilongwe',
-    type: 'APARTMENT',
-    bedrooms: 2,
-    bathrooms: 2,
-    images: [{ id: 'img2', secureUrl: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=800' }],
-    avgRating: 4.5,
-    status: 'AVAILABLE' as const,
-  },
-  {
-    id: '3',
-    title: 'Silver Oak Residences',
-    pricePerNight: 65000,
-    city: 'Blantyre',
-    type: 'HOUSE',
-    bedrooms: 3,
-    bathrooms: 2,
-    images: [{ id: 'img3', secureUrl: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&q=80&w=800' }],
-    avgRating: 4.2,
-    status: 'AVAILABLE' as const,
-  },
-];
-
-const STATS = [
-  { label: 'Satisfied Clients', value: '100%' },
-  { label: 'Property Sells', value: '500+' },
-  { label: 'Cities & Locations', value: '9+' },
-  { label: 'Positive Reviews', value: '200+' },
-];
+import { useProperties } from '@/hooks/useProperties';
+import { usePublicStats } from '@/hooks/useAnalytics';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const CITIES = [
   { name: 'Lilongwe', count: '120+ listings', icon: '🏙️' },
@@ -57,6 +18,30 @@ const CITIES = [
 ];
 
 export default function HomePage() {
+  const [searchType, setSearchType] = useState('');
+  const [searchLocation, setSearchLocation] = useState('');
+  const router = useRouter();
+
+  const handleSearch = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (searchType) params.append('type', searchType);
+    if (searchLocation) params.append('city', searchLocation);
+    router.push(`/properties${params.toString() ? `?${params.toString()}` : ''}`);
+  };
+
+  const { data: propertiesData, isLoading: propertiesLoading } = useProperties({ limit: 3 });
+  const { data: stats, isLoading: statsLoading } = usePublicStats();
+  
+  const properties = propertiesData?.data || [];
+
+  const displayStats = [
+    { label: 'Satisfied Clients', value: stats ? `${stats.satisfactionRate}%` : '100%' },
+    { label: 'Property Sells', value: stats ? `${stats.propertySells}+` : '500+' },
+    { label: 'Cities & Locations', value: stats ? `${stats.citiesCount}+` : '9+' },
+    { label: 'Positive Reviews', value: stats ? `${stats.positiveReviews}+` : '200+' },
+  ];
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* ─── HERO ──────────────────────────────────────────────── */}
@@ -92,36 +77,42 @@ export default function HomePage() {
           <div className="mt-8 bg-white rounded-2xl shadow-2xl p-2 flex flex-col md:flex-row items-stretch gap-2 max-w-3xl mx-auto text-gray-900">
             <div className="flex items-center flex-1 px-4 border-r border-gray-200">
               <Home className="w-5 h-5 text-primary mr-3 flex-shrink-0" />
-              <select className="bg-transparent w-full outline-none text-sm text-gray-600 py-3">
+              <select 
+                className="bg-transparent w-full outline-none text-sm text-gray-600 py-3"
+                value={searchType}
+                onChange={(e) => setSearchType(e.target.value)}
+              >
                 <option value="">Property Type</option>
-                <option>Apartment</option>
-                <option>House</option>
-                <option>Villa</option>
-                <option>Commercial</option>
+                <option value="APARTMENT">Apartment</option>
+                <option value="HOUSE">House</option>
+                <option value="VILLA">Villa</option>
+                <option value="COMMERCIAL">Commercial</option>
               </select>
             </div>
             <div className="flex items-center flex-1 px-4 border-r border-gray-200">
               <MapPin className="w-5 h-5 text-primary mr-3 flex-shrink-0" />
-              <select className="bg-transparent w-full outline-none text-sm text-gray-600 py-3">
+              <select 
+                className="bg-transparent w-full outline-none text-sm text-gray-600 py-3"
+                value={searchLocation}
+                onChange={(e) => setSearchLocation(e.target.value)}
+              >
                 <option value="">Location</option>
                 {['Lilongwe', 'Blantyre', 'Zomba', 'Mangochi', 'Mzuzu'].map(c => (
-                  <option key={c}>{c}</option>
+                  <option key={c} value={c}>{c}</option>
                 ))}
               </select>
             </div>
-            <Link href="/properties">
-              <Button size="lg" className="w-full md:w-auto rounded-xl px-8 py-6 h-auto text-base bg-primary hover:bg-primary/90 shadow-md">
-                <Search className="w-5 h-5 mr-2" />
-                Search Properties
-              </Button>
-            </Link>
+            <Button size="lg" className="w-full md:w-auto rounded-xl px-8 py-6 h-auto text-base bg-primary hover:bg-primary/90 shadow-md" onClick={handleSearch}>
+              <Search className="w-5 h-5 mr-2" />
+              Search Properties
+            </Button>
           </div>
 
           {/* quick filters */}
           <div className="flex items-center justify-center gap-3 flex-wrap pt-2">
             <span className="text-white/60 text-sm">Filter:</span>
-            {['City', 'House', 'Residential', 'Apartment'].map(f => (
-              <Link href={`/properties?type=${f}`} key={f}>
+            {['Apartment', 'House', 'Villa', 'Commercial'].map(f => (
+              <Link href={`/properties?type=${f.toUpperCase()}`} key={f}>
                 <span className="px-3 py-1 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full text-xs text-white cursor-pointer transition-colors">
                   {f}
                 </span>
@@ -135,10 +126,19 @@ export default function HomePage() {
       <section className="bg-white border-b border-green-100 shadow-sm">
         <div className="container mx-auto px-4 py-6">
           <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-green-100">
-            {STATS.map(stat => (
+            {displayStats.map(stat => (
               <div key={stat.label} className="text-center py-2 px-4">
-                <p className="text-2xl md:text-3xl font-extrabold text-primary">{stat.value}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
+                {statsLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-20 mx-auto" />
+                    <Skeleton className="h-3 w-24 mx-auto" />
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-2xl md:text-3xl font-extrabold text-primary">{stat.value}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
+                  </>
+                )}
               </div>
             ))}
           </div>
@@ -160,11 +160,27 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {MOCK_PROPERTIES.map(property => (
-            <PropertyCard key={property.id} property={property} />
-          ))}
-        </div>
+        {propertiesLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="space-y-4">
+                <Skeleton className="h-64 w-full rounded-2xl" />
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : properties.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {properties.map(property => (
+              <PropertyCard key={property.id} property={property} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-10 bg-gray-50 rounded-2xl">
+            <p className="text-gray-500">No premier houses highlighted right now.</p>
+          </div>
+        )}
 
         <div className="text-center mt-8 md:hidden">
           <Link href="/properties">

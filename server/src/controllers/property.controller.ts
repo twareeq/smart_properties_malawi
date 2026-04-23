@@ -20,7 +20,8 @@ export const createProperty = async (req: Request, res: Response) => {
         // Create images
         const imageRecords = images.map((url: string, index: number) => ({
           propertyId: property.id,
-          url,
+          secureUrl: url,
+          publicId: `img-${Date.now()}-${index}`,
           isPrimary: index === 0
         }));
         await tx.propertyImage.createMany({
@@ -115,7 +116,7 @@ export const getProperties = async (req: Request, res: Response) => {
         take: limitNum,
         orderBy: { createdAt: 'desc' },
         include: {
-          images: { where: { isPrimary: true } }, // mostly need primary image for list
+          images: { take: 1 }, // Get at least one image if available
           owner: { select: { profile: { select: { firstName: true, lastName: true } } } },
           reviews: { select: { rating: true } }
         }
@@ -123,12 +124,28 @@ export const getProperties = async (req: Request, res: Response) => {
       prisma.property.count({ where })
     ]);
 
+    // Get user's favorites if authenticated
+    let favoriteIds: string[] = [];
+    const userId = (req as any).user?.id;
+    if (userId) {
+      const favorites = await prisma.favorite.findMany({
+        where: { tenantId: userId },
+        select: { propertyId: true }
+      });
+      favoriteIds = favorites.map(f => f.propertyId);
+    }
+
     // calculate avg rating visually
     const processedProperties = properties.map(p => {
       const avgRating = p.reviews.length > 0 
         ? p.reviews.reduce((acc, curr) => acc + curr.rating, 0) / p.reviews.length 
         : 0;
-      return { ...p, avgRating, reviews: undefined };
+      return { 
+        ...p, 
+        avgRating, 
+        reviews: undefined,
+        isFavorited: favoriteIds.includes(p.id)
+      };
     });
 
     return sendSuccess(res, 200, true, 'Properties fetched successfully', processedProperties, {
@@ -196,7 +213,22 @@ export const getPropertyById = async (req: Request, res: Response) => {
       ? property.reviews.reduce((acc, curr) => acc + curr.rating, 0) / property.reviews.length 
       : 0;
 
-    return sendSuccess(res, 200, true, 'Property details fetched', { ...property, avgRating });
+    // Check if favorited if user is AUTHed
+    let isFavorited = false;
+    const authUserId = (req as any).user?.id;
+    if (authUserId) {
+      const fav = await prisma.favorite.findUnique({
+        where: {
+          tenantId_propertyId: {
+            tenantId: authUserId,
+            propertyId: id
+          }
+        }
+      });
+      isFavorited = !!fav;
+    }
+
+    return sendSuccess(res, 200, true, 'Property details fetched', { ...property, avgRating, isFavorited });
   } catch (error: any) {
     return sendError(res, 500, false, 'Failed to fetch property details', error.message);
   }

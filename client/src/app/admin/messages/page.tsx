@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useConversations, useMessages, useReplyMessage } from '@/hooks/useMessagesAndReviews';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/button';
@@ -12,9 +12,18 @@ export default function AdminMessagesPage() {
   const { data: conversations, isLoading } = useConversations();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: messages, refetch } = useMessages(activeId || '');
   const { mutateAsync: reply, isPending } = useReplyMessage();
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleReply = async () => {
     if (!replyText.trim() || !activeId) return;
@@ -40,7 +49,11 @@ export default function AdminMessagesPage() {
                 onClick={() => setActiveId(conv.id)}
                 className={`w-full text-left p-4 border-b hover:bg-gray-50 transition-colors ${activeId === conv.id ? 'bg-primary/5' : ''}`}
               >
-                <p className="font-medium text-sm">{conv.tenant?.email || 'Tenant'}</p>
+                <p className="font-medium text-sm">
+                  {conv.tenant?.profile?.firstName 
+                    ? `${conv.tenant.profile.firstName} ${conv.tenant.profile.lastName || ''}` 
+                    : (conv.tenant?.email || 'Tenant')}
+                </p>
                 <p className="text-xs text-gray-400 mt-1 truncate">{conv.property?.title}</p>
               </button>
             ))}
@@ -58,6 +71,7 @@ export default function AdminMessagesPage() {
                       </div>
                     </div>
                   ))}
+                  <div ref={messagesEndRef} />
                 </div>
                 <div className="p-4 border-t flex gap-2">
                   <Textarea placeholder="Reply..." value={replyText} onChange={e => setReplyText(e.target.value)} className="resize-none min-h-0 h-10"

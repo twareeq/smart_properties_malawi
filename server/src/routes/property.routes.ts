@@ -18,7 +18,6 @@ router.get('/', validateRequest(propertyQuerySchema), getProperties);
 
 // We need an optional auth middleware if we want to track anonymous views vs logged in views in getPropertyById, 
 // using authenticate directly would block Guests.
-// Let's create an inline middleware to extract user if token exists but not fail if missing
 const optionalAuth = async (req: any, res: any, next: any) => {
   try {
     let token;
@@ -33,18 +32,17 @@ const optionalAuth = async (req: any, res: any, next: any) => {
   next();
 };
 
+// Must be before /:id to avoid conflict
+router.get('/my/listings', authenticate, authorizeRoles('ADMIN'), getMyProperties);
+
 router.get('/:id', optionalAuth, getPropertyById);
 
 // Protected routes (Admin / Property Owner)
 router.use(authenticate);
 router.use(authorizeRoles('ADMIN'));
 
-// Must be before /:id to avoid conflict
-router.get('/my/listings', getMyProperties);
-
 router.post('/', validateRequest(createPropertySchema), createProperty);
 router.put('/:id', validateRequest(updatePropertySchema), updateProperty);
 router.delete('/:id', deleteProperty);
 
 export default router;
-

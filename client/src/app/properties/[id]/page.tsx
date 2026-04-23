@@ -6,7 +6,16 @@ import { useProperty } from '@/hooks/useProperties';
 import {
   usePropertyReviews,
   useSubmitReview,
+  useSendMessage,
 } from '@/hooks/useMessagesAndReviews';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { useCreateBooking, useMyBookings } from '@/hooks/useBookings';
 import { useAuthStore } from '@/store/authStore';
 import { useToast } from '@/components/providers/ToastProvider';
@@ -79,11 +88,16 @@ export default function PropertyDetailPage() {
 
   const { mutateAsync: createBooking, isPending: bookingPending } =
     useCreateBooking();
-  const { data: myBookings } = useMyBookings();
+  const { data: myBookings } = useMyBookings({ enabled: isAuthenticated });
   const { mutateAsync: submitReview, isPending: reviewPending } = useSubmitReview();
+  const { mutateAsync: sendMessage, isPending: sendingMessage } = useSendMessage();
+
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [hoverRating, setHoverRating] = useState(0);
+
+  const [chatMessage, setChatMessage] = useState('');
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const canReview = myBookings?.some(
     (b: any) => b.propertyId === id && (b.status === 'CONFIRMED' || b.status === 'COMPLETED')
@@ -91,7 +105,7 @@ export default function PropertyDetailPage() {
 
   const handleBooking = async () => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
     if (!checkIn) {
@@ -140,6 +154,25 @@ export default function PropertyDetailPage() {
         err?.response?.data?.message || 'Failed to submit review.',
         'error',
       );
+    }
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      addToast('Please sign in to message the property owner.', 'info');
+      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+    if (!chatMessage.trim()) return;
+
+    try {
+      await sendMessage({ propertyId: id, content: chatMessage });
+      addToast('Message sent! Check your dashboard for replies.', 'success');
+      setChatMessage('');
+      setIsChatOpen(false);
+    } catch (err: any) {
+      addToast(err?.response?.data?.message || 'Failed to send message.', 'error');
     }
   };
 
@@ -537,13 +570,36 @@ export default function PropertyDetailPage() {
                     : 'Reserve Property'}
                 </Button>
 
-                <Button
-                  variant="outline"
-                  className="w-full flex items-center gap-2"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  Message Owner
-                </Button>
+                <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full flex items-center gap-2"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      Message Owner
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Message the Owner</DialogTitle>
+                      <DialogDescription>
+                        Ask the host about availability, amenities, or anything else you need to know.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-2">
+                      <Textarea
+                        placeholder="Hi! I'm interested in this property..."
+                        value={chatMessage}
+                        onChange={(e) => setChatMessage(e.target.value)}
+                        className="min-h-[120px] resize-none"
+                      />
+                      <Button onClick={handleSendMessage} disabled={sendingMessage || !chatMessage.trim()} className="w-full">
+                        {sendingMessage ? 'Sending...' : 'Send Message'}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
 
                 <p className="text-center text-xs text-gray-400">
                   You won&apos;t be charged yet. Payment comes next.

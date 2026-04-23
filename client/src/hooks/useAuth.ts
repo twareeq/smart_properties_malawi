@@ -5,7 +5,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { authService, LoginData, RegisterData, ProfileUpdateData } from '@/lib/services/auth.service';
 import { useRouter } from 'next/navigation';
 
-export function useLogin() {
+export function useLogin(redirectTo?: string) {
   const setAuth = useAuthStore((s) => s.setAuth);
   const router = useRouter();
 
@@ -21,13 +21,13 @@ export function useLogin() {
       if (user.role === 'ADMIN') {
         router.push('/admin');
       } else {
-        router.push('/dashboard');
+        router.push(redirectTo || '/dashboard');
       }
     },
   });
 }
 
-export function useRegister() {
+export function useRegister(redirectTo?: string) {
   const setAuth = useAuthStore((s) => s.setAuth);
   const router = useRouter();
 
@@ -40,7 +40,7 @@ export function useRegister() {
         localStorage.setItem('spm_token', token);
         localStorage.setItem('spm_user', JSON.stringify(user));
       }
-      router.push('/dashboard');
+      router.push(redirectTo || '/dashboard');
     },
   });
 }
@@ -56,5 +56,11 @@ export function useMe() {
 export function useUpdateProfile() {
   return useMutation({
     mutationFn: (data: ProfileUpdateData) => authService.updateProfile(data),
+  });
+}
+
+export function useUpdateAvatar() {
+  return useMutation({
+    mutationFn: (file: File) => authService.uploadAvatar(file),
   });
 }

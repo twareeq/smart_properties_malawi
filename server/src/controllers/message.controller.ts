@@ -102,6 +102,16 @@ export const sendMessage = async (req: Request, res: Response) => {
       }
     });
 
+    // Create Notification for the Admin/Property Owner
+    await prisma.notification.create({
+      data: {
+        userId: property.ownerId,
+        type: 'NEW_MESSAGE',
+        title: 'New Message',
+        message: `You have received a new message regarding property: ${property.title}`
+      }
+    });
+
     return sendSuccess(res, 201, true, 'Message sent', message);
   } catch (error: any) {
     return sendError(res, 500, false, 'Failed to send message', error.message);
@@ -132,6 +142,17 @@ export const replyMessage = async (req: Request, res: Response) => {
     await prisma.conversation.update({
       where: { id: conversationId },
       data: { updatedAt: new Date() }
+    });
+
+    // Create Notification for the recipient
+    const recipientId = conversation.tenantId === userId ? conversation.adminId : conversation.tenantId;
+    await prisma.notification.create({
+      data: {
+        userId: recipientId,
+        type: 'NEW_MESSAGE',
+        title: 'New Message',
+        message: 'You have received a new reply in your conversation.'
+      }
     });
 
     return sendSuccess(res, 201, true, 'Reply sent', message);

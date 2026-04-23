@@ -4,6 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useToast } from "@/components/providers/ToastProvider";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -34,6 +37,24 @@ export default function AdminSidebar() {
   const pathname = usePathname();
   const { logout, user } = useAuthStore();
   const router = useRouter();
+  const { addToast } = useToast();
+  
+  const { data: notifications } = useNotifications();
+  const [prevNotifIds, setPrevNotifIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (notifications) {
+      if (prevNotifIds.length > 0) {
+        const newNotifs = notifications.filter((n: any) => !n.isRead && !prevNotifIds.includes(n.id));
+        if (newNotifs.length > 0) {
+          addToast(`You have ${newNotifs.length} new notification(s)`, "info");
+        }
+      }
+      setPrevNotifIds(notifications.map((n: any) => n.id));
+    }
+  }, [notifications]);
+
+  const unreadCount = notifications?.filter((n: any) => !n.isRead).length || 0;
 
   const handleLogout = () => {
     logout();
@@ -47,10 +68,16 @@ export default function AdminSidebar() {
   return (
     <aside className="w-64 flex-shrink-0 bg-gray-900 text-white min-h-screen flex flex-col">
       <div className="p-6 border-b border-gray-800">
-        <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold text-sm mb-1">
-          {user?.email?.[0]?.toUpperCase() || "A"}
+        <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold text-sm mb-1 overflow-hidden">
+          {user?.profile?.avatarUrl ? (
+            <img src={user.profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+          ) : (
+            user?.profile?.firstName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'A'
+          )}
         </div>
-        <p className="text-sm text-gray-300 truncate">{user?.email}</p>
+        <p className="text-sm text-gray-300 truncate">
+          {user?.profile?.firstName ? `${user.profile.firstName} ${user.profile.lastName || ''}` : user?.email}
+        </p>
         <span className="text-xs text-gray-500">Administrator</span>
       </div>
 
@@ -70,7 +97,12 @@ export default function AdminSidebar() {
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
               <span className="flex-1">{label}</span>
-              {active && <ChevronRight className="w-4 h-4" />}
+              {href === "/admin/notifications" && unreadCount > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+              {active && href !== "/admin/notifications" && <ChevronRight className="w-4 h-4" />}
             </Link>
           );
         })}

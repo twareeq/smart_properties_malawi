@@ -7,6 +7,8 @@ import messageRoutes from './message.routes';
 import reviewRoutes from './review.routes';
 import analyticsRoutes from './analytics.routes';
 import uploadRoutes from './upload.routes';
+import favoriteRoutes from './favorite.routes';
+import notificationRoutes from './notification.routes';
 
 const router = Router();
 
@@ -18,6 +20,8 @@ router.use('/messages', messageRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/uploads', uploadRoutes);
+router.use('/favorites', favoriteRoutes);
+router.use('/notifications', notificationRoutes);
 
 router.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok', message: 'Smart Properties Malawi API is running' });
